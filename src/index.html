@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a1114">
+  <meta name="description" content="Lemmings AVX. Una expedición de rescate en el universo Vector Field. Juega la primera etapa: Solo cava.">
+  <title>Lemmings AVX · Vector Field</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a1114'/%3E%3Cpath d='M7 12h18v5H7z' fill='%23a4ef68'/%3E%3Cpath d='M11 17h11v7H11z' fill='%23f6d4b4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles/game.css">
+  <script type="module" src="./js/main.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="masthead">
+      <a class="brand" href="./" aria-label="Lemmings AVX, inicio">LEMMINGS <span>AVX</span></a>
+      <button id="sound" class="quiet" aria-pressed="false" aria-label="Silenciar sonido">SONIDO: SÍ</button>
+    </header>
+    <main>
+      <section id="intro" class="intro" aria-labelledby="title">
+        <div class="mission-info">
+          <p id="mission-number" class="eyebrow">ETAPA 1</p>
+          <h1 id="title">Solo cava.</h1>
+          <p id="mission-brief">10 lemmings · Rescata al menos 1 · 5 minutos</p>
+          <span id="best">MEJOR RESCATE: —</span>
+        </div>
+        <div class="menu-actions">
+          <button id="start" class="primary"><span id="start-label">JUGAR ETAPA 1</span> <span aria-hidden="true">↗</span></button>
+          <button id="help" class="secondary">Cómo jugar</button>
+        </div>
+      </section>
+      <section id="game" aria-label="Etapa 1: Solo cava">
+        <div class="stage-heading"><span id="stage-label">ETAPA 1 / SOLO CAVA</span></div>
+        <div id="hud" class="hud" hidden>
+          <div><span>POR SALIR</span><strong id="remaining">10</strong></div>
+          <div><span>EN CAMINO</span><strong id="active">0</strong></div>
+          <div class="saved"><span>A SALVO</span><strong><span id="saved">0</span><small id="saved-total"> / 10</small></strong></div>
+          <div class="goal"><span>OBJETIVO</span><strong><span id="goal">1</span><small id="goal-total"> / 10</small></strong></div>
+          <div><span>TIEMPO</span><strong id="time">05:00</strong></div>
+          <button id="pause" class="icon-button" aria-label="Pausar partida">Ⅱ</button>
+        </div>
+        <div class="stage-frame">
+          <div id="viewport" class="viewport">
+            <canvas id="world" width="800" height="360" tabindex="0" aria-label="Terreno de juego. Selecciona Cavar y pulsa un lemming que camine. Con teclado: flechas para seleccionar, Enter para cavar.">Tu navegador necesita Canvas para mostrar el juego.</canvas>
+          </div>
+          <button id="edge-left" class="edge edge-left" hidden aria-label="Lemmings a la izquierda">◀ <b>0</b></button>
+          <button id="edge-right" class="edge edge-right" hidden aria-label="Lemmings a la derecha"><b>0</b> ▶</button>
+          <div id="view-track" class="view-track" hidden aria-hidden="true"><span id="view-thumb"></span></div>
+        </div>
+        <div id="toolbar" class="toolbar" hidden>
+          <button id="dig" class="skill" aria-pressed="true"><span class="skill-icon" aria-hidden="true">⛏</span><span><strong>CAVAR</strong><small>HABILIDAD <kbd>D</kbd></small></span><b id="diggers">10</b></button>
+          <div class="rate-control"><span>RITMO DE SALIDA</span><div><button id="slower" aria-label="Reducir ritmo de salida">−</button><output id="rate">50</output><button id="faster" aria-label="Aumentar ritmo de salida">+</button></div></div>
+          <button id="speed" class="speed" aria-pressed="false">×1 <span>VELOCIDAD</span></button>
+          <button id="restart" class="quiet restart" aria-label="Reiniciar etapa">↻ <span>REINICIAR</span></button>
+        </div>
+        <div class="field-note"><span id="hint">Cava un túnel para llegar a la salida.</span><span id="keyboard-note"></span></div>
+      </section>
+    </main>
+  </div>
+  <dialog id="modal" aria-labelledby="modal-title">
+    <form method="dialog"><button class="close" aria-label="Cerrar" value="close">×</button></form>
+    <p id="modal-kicker" class="eyebrow">EXPEDICIÓN 001</p><h2 id="modal-title"></h2><div id="modal-copy"></div>
+    <div class="modal-actions"><button id="modal-primary" class="primary"></button><button id="modal-secondary" class="secondary">Volver al menú</button></div>
+  </dialog>
+  <p id="announcement" class="sr-only" aria-live="polite"></p>
+  <noscript>Activa JavaScript para jugar Lemmings AVX.</noscript>
+</body>
+</html>
