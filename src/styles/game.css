@@ -65,6 +65,12 @@ canvas:focus-visible{outline:1px solid rgba(var(--theme-rgb),.35);outline-offset
 .field-hint{position:absolute;left:50%;bottom:20px;z-index:1;max-width:min(92%,44rem);margin:0;padding:.55rem .9rem;transform:translateX(-50%);
   border:1px solid rgba(var(--theme-rgb),.55);background:rgba(2,7,17,.84);color:var(--theme-soft);font-size:.7rem;font-weight:700;letter-spacing:.08em;line-height:1.4;text-align:center;
   box-shadow:0 0 24px rgba(var(--theme-rgb),.15);pointer-events:none}
+/* Countdown shown once the stage can no longer be won. */
+.doom{position:absolute;top:18px;left:50%;z-index:2;display:grid;justify-items:center;gap:2px;max-width:min(92%,30rem);padding:.7rem 1.4rem;transform:translateX(-50%);
+  border:1px solid rgba(255,107,107,.7);background:rgba(17,4,8,.88);clip-path:var(--clip-sm);text-align:center;pointer-events:none;box-shadow:0 0 28px rgba(255,107,107,.18)}
+.doom__label{color:#ff9b9b;font-size:.7rem;font-weight:700;letter-spacing:.24em}
+.doom__count{color:#ffd0d0;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;text-shadow:0 0 16px rgba(255,107,107,.6)}
+.doom__reason{color:var(--text-muted);font-size:.68rem;letter-spacing:.06em;line-height:1.4}
 
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
 .toolbar{position:relative;z-index:3;flex:none;display:flex;align-items:center;gap:clamp(10px,2vw,24px);padding:10px clamp(16px,3.5vw,52px);

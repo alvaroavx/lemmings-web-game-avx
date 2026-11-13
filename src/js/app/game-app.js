@@ -387,6 +387,10 @@ export class GameApp {
     if (event.type === 'victory' || event.type === 'defeat' || event.type === 'debris') return;
     this.audio.play(event.type);
     if ((event.type === 'saved' || event.type === 'lost') && event.id === this.selectedId) this.selectedId = null;
+    if (event.type === 'doom') {
+      this.hint('La etapa ya no se puede superar. Termina en unos segundos.');
+      this.announce(`Sin salida. La etapa termina en ${Math.ceil(this.world.doomLeft)} segundos.`);
+    }
     if (event.type === 'saved') {
       this.hint(`${this.world.saved} a salvo. Sigue acompañando al resto de la colonia.`);
       this.announce(`${this.world.saved} de ${this.level.total} a salvo.`);

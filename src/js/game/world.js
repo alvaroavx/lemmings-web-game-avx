@@ -15,7 +15,7 @@ const inside = (r, x, y) => x >= r.x && x < r.x + r.width && y >= r.y && y < r.y
  * jobs run through SKILL_BY_STATE and abilities through trait hooks.
  */
 export class World {
-  #stoppers = [];
+  #stoppers = []; #forecast = null; #lookahead = true;
   constructor(level = FIRST_LEVEL) {
     this.level = assertLevel(normalizeLevel(level));
     this.terrain = new Terrain(this.level.width, this.level.height, this.level.terrain);
@@ -23,12 +23,16 @@ export class World {
     this.spawnTimer = RULES.firstSpawn; this.released = 0;
     this.rate = this.level.rate; this.inventory = { ...this.level.skills };
     this.saved = 0; this.lost = 0; this.result = null;
+    /** Set once the stage can no longer be won: { at, reason }; it ends `RULES.doomGrace` s later. */
+    this.doom = null;
     this.blasts = []; this.events = []; this.log = [];
   }
   get remaining() { return this.level.total - this.released; }
   get active() { return this.lemmings.filter(alive); }
   get activeCount() { let n = 0; for (const l of this.lemmings) n += alive(l); return n; }
   get diggers() { return this.inventory.dig ?? 0; }
+  /** Seconds left before a doomed stage ends; null while it can still be won. */
+  get doomLeft() { return this.doom ? Math.max(0, this.doom.at + RULES.doomGrace - this.time) : null; }
 
   // ── Commands (validated, logged, replayable) ───────────────────────────────
   setRate(rate) {
@@ -116,15 +120,51 @@ export class World {
       && this.lemmings.every(l => !alive(l) || l.state === 'blocking')) {
       for (const l of this.lemmings) if (alive(l)) this.settle(l, 'lost', 'stranded');
     }
-    const timeout = this.time >= level.seconds;
-    if (timeout) {
-      for (const l of this.lemmings) if (alive(l)) this.settle(l, 'lost');
+    if (!this.doom && this.saved + this.lost < level.total) {
+      const reason = this.hopeless();
+      if (reason) { this.doom = { at: this.time, reason }; this.emit({ type: 'doom', reason }); }
+    }
+    const timeout = this.time >= level.seconds, doomed = this.doomLeft === 0;
+    if (timeout || doomed) {
+      for (const l of this.lemmings) if (alive(l)) this.settle(l, 'lost', doomed ? 'doom' : 'lost');
       this.lost += this.remaining; this.released = level.total;
     }
-    if (timeout || this.saved + this.lost === level.total) {
+    if (timeout || doomed || this.saved + this.lost === level.total) {
       this.result = this.saved >= level.required ? 'won' : 'lost';
       this.emit({ type: this.result === 'won' ? 'victory' : 'defeat' });
     }
+  }
+  /**
+   * Why the stage can no longer be won, or null. Two cases:
+   *  - 'count': even if every lemming still alive or in the hatch got home,
+   *    the goal would not be reached;
+   *  - 'fate':  the player has nothing left to change (hatch empty, no skill
+   *    uses, no job to cancel) and the rest of the match, now fully
+   *    determined, is simulated once on a copy and ends below the goal.
+   */
+  hopeless() {
+    const { level } = this;
+    if (this.saved + this.activeCount + this.remaining < level.required) return 'count';
+    if (!this.#lookahead || this.#forecast !== null || this.remaining > 0) return null;
+    if (Object.values(this.inventory).some(n => n > 0)) return null;
+    if (this.lemmings.some(l => alive(l) && SKILL_OF_STATE[l.state]?.cancellable)) return null;
+    this.#forecast = this.copy().finish().saved;
+    return this.#forecast < level.required ? 'fate' : null;
+  }
+  /** Independent copy of the current state that never forecasts itself. */
+  copy() {
+    const twin = new World(this.level);
+    twin.#lookahead = false;
+    twin.terrain.cells.set(this.terrain.cells);
+    for (const key of ['tick', 'time', 'spawnTimer', 'released', 'rate', 'saved', 'lost']) twin[key] = this[key];
+    twin.inventory = { ...this.inventory };
+    twin.lemmings = this.lemmings.map(l => ({ ...l, traits: { ...l.traits } }));
+    return twin;
+  }
+  /** Runs without commands until the match resolves. */
+  finish(dt = 1 / 60) {
+    while (!this.result) { this.update(dt); this.events.length = 0; }
+    return this;
   }
   spawn() {
     const hatches = this.level.hatches, hatch = hatches[this.released % hatches.length];
@@ -164,9 +204,9 @@ export class World {
     if (this.blockedAhead(l)) { l.direction = -l.direction; return; }
     const t = this.terrain, dir = l.direction, nx = l.x + dir * RULES.walkSpeed * dt;
     // A wall is anything ahead taller than a climbable step.
-    if (t.solid(nx + dir * RULES.wallProbe, l.y - 1 - RULES.stepUp)) { this.meetWall(l); return; }
+    if (t.blocks(nx + dir * RULES.wallProbe, l.y - 1 - RULES.stepUp, dir)) { this.meetWall(l); return; }
     let y = l.y;
-    for (let climbed = 0; t.solid(nx, y - 1); climbed++) {
+    for (let climbed = 0; t.blocks(nx, y - 1, dir); climbed++) {
       if (climbed >= RULES.stepUp) { this.meetWall(l); return; }
       y--;
     }

@@ -42,7 +42,7 @@ test('first stage can rescue all ten with one digger', () => {
   assert.equal(w.diggers, 9); assert.equal(w.active.length, 0); assert.equal(w.activeCount, 0);
   assert.equal(w.terrain.solid(262, 145), false); assert.equal(w.terrain.solid(262, 185), false);
 });
-test('without excavation, walled walkers pace the upper platform until time runs out', () => {
+test('while skills remain, walled walkers pace the upper platform until time runs out', () => {
   const w = run(new World(), 100);
   assert.equal(w.result, null); assert.equal(w.lost, 0); assert.equal(w.activeCount, 10);
   assert.ok(w.active.every(l => l.y === 134 && l.x > 112 && l.x < 704), 'nobody falls off the ends');
@@ -172,4 +172,33 @@ test('cancel commands replay exactly', () => {
 test('blockers and climbers cannot be cancelled', () => {
   const w = run(new World({ ...FIRST_LEVEL, skills: { dig: 1, block: 1 } }), 2.5);
   assert.equal(w.assign(1, 'block'), true); assert.equal(w.cancel(1), false); assert.equal(w.inventory.block, 0);
+});
+
+// ── A stage that can no longer be won ends after a short countdown ───────────
+const stuck = (extra = {}) => arena([{ x: 0, y: 30, width: 6, height: 20 }, { x: 150, y: 30, width: 6, height: 20 }],
+  { total: 3, required: 1, skills: {}, rate: 99, seconds: 300, ...extra });
+test('when nothing the player can do changes the outcome, a countdown ends the stage', () => {
+  const w = new World(stuck());
+  for (let i = 0; i < 60 * 60 && !w.doom; i++) w.update(1 / 60);
+  assert.ok(w.doom, 'the walled colony is doomed once the hatch is empty and no skills remain');
+  assert.equal(w.doom.reason, 'fate'); assert.equal(w.result, null);
+  const left = w.doomLeft; assert.ok(left > 0 && left <= RULES.doomGrace);
+  run(w, RULES.doomGrace + 1);
+  assert.equal(w.result, 'lost'); assert.equal(w.lost, 3); assert.ok(w.time < 20, `ended at ${w.time}s, not at 300s`);
+});
+test('a stage whose goal exceeds the survivors is doomed at once, skills or not', () => {
+  const w = new World(stuck({ skills: { dig: 5 }, required: 3 }));
+  w.spawn(); w.settle(w.lemmings[0], 'lost'); w.update(1 / 60);
+  assert.equal(w.doom?.reason, 'count', 'two left cannot meet a goal of three');
+  assert.equal(w.inventory.dig, 5);
+});
+test('a forecast never dooms a stage that would still be won, and skills left keep hope', () => {
+  const free = run(new World(arena([], { total: 2, required: 2, skills: {}, rate: 99, seconds: 300 })), 30);
+  assert.equal(free.doom, null); assert.equal(free.result, 'won');
+  const armed = run(new World(stuck({ skills: { dig: 1 } })), 30);
+  assert.equal(armed.doom, null, 'an unused skill might still open the way');
+});
+test('doomed stages replay exactly', () => {
+  const w = run(new World(stuck()), 30);
+  assert.equal(JSON.stringify(replay(w.level, w.log)), JSON.stringify(w));
 });

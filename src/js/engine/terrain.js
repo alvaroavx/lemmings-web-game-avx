@@ -1,7 +1,16 @@
 const HISTORY = 128;
 
-/** Cell values. 0 is always empty; any other value is solid. */
-export const MATERIAL = Object.freeze({ empty: 0, earth: 1, steel: 2 });
+/**
+ * Cell values. 0 is always empty; any other value is solid.
+ * Bricks are earth laid by a builder and remember which way their stair
+ * climbs: a walker facing that way meets them as steps, while one walking the
+ * other way passes through them, so nobody is ever trapped under a stair.
+ */
+export const MATERIAL = Object.freeze({ empty: 0, earth: 1, steel: 2, brickRight: 3, brickLeft: 4 });
+/** Material of a brick whose stair climbs towards `direction` (+1 right, −1 left). */
+export const brickFor = direction => direction > 0 ? MATERIAL.brickRight : MATERIAL.brickLeft;
+/** Earth and bricks: what skills can carve. */
+export const diggable = value => value === MATERIAL.earth || value === MATERIAL.brickRight || value === MATERIAL.brickLeft;
 
 /**
  * Destructible material mask: the single source of collision and of the drawn
@@ -24,17 +33,22 @@ export class Terrain {
     return x >= 0 && x < this.width && y >= 0 && y < this.height ? this.cells[y * this.width + x] : 0;
   }
   solid(x, y) { return this.at(x, y) !== 0; }
+  /** Solid for a walker heading `direction`: bricks of a stair climbing the other way let it through. */
+  blocks(x, y, direction) {
+    const value = this.at(x, y);
+    return value !== 0 && value !== brickFor(-direction);
+  }
   /** Removes every material, steel included (authoring and tests; skills use carve). */
   clear(x, y, width, height) { return this.write(x, y, width, height, 0, true); }
   fill(x, y, width, height, material = MATERIAL.earth) { return this.write(x, y, width, height, material, true); }
-  /** Removes earth only. Reports removed earth and steel found, so a skill can stop. */
+  /** Removes earth and bricks only. Reports removed earth and steel found, so a skill can stop. */
   carve(x, y, width, height) {
     const { x0, y0, x1, y1 } = this.bounds(x, y, width, height);
     let earth = 0, steel = 0;
     for (let py = y0; py < y1; py++) {
       const row = py * this.width;
       for (let i = row + x0; i < row + x1; i++) {
-        if (this.cells[i] === MATERIAL.earth) { this.cells[i] = 0; earth++; } else if (this.cells[i] === MATERIAL.steel) steel++;
+        if (diggable(this.cells[i])) { this.cells[i] = 0; earth++; } else if (this.cells[i] === MATERIAL.steel) steel++;
       }
     }
     if (earth) this.track(x0, y0, x1, y1);
@@ -48,7 +62,7 @@ export class Terrain {
       const dy = py + .5 - cy, row = py * this.width;
       for (let px = x0; px < x1; px++) {
         const dx = px + .5 - cx;
-        if (dx * dx + dy * dy <= radius * radius && this.cells[row + px] === MATERIAL.earth) { this.cells[row + px] = 0; earth++; }
+        if (dx * dx + dy * dy <= radius * radius && diggable(this.cells[row + px])) { this.cells[row + px] = 0; earth++; }
       }
     }
     if (earth) this.track(x0, y0, x1, y1);

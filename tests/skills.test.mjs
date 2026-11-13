@@ -56,6 +56,21 @@ test('a builder lays a 12-step stair, 24 px up and 48 px across, and nobody over
   assert.equal(b.y, 56); assert.equal(b.x, 148);
   assert.equal(w.terrain.solid(147, 57), true); assert.equal(w.terrain.solid(147, 55), false);
 });
+test('a stair has one way up; from the other side walkers pass through it and are never trapped', () => {
+  // A stair built to the right that stops short of a ledge leaves a pocket
+  // between its underside and the ledge face (stage 7 with a late builder).
+  const w = new World({ ...arena({ skills: { build: 1 }, total: 3, terrain: [{ x: 168, y: 56, width: 132, height: 24 }] }),
+    exits: [{ x: 294, y: 56, width: 4 }] });
+  const b = walker(w, 100); w.assign(b.id, 'build');
+  while (b.state === 'building') w.update(1 / 60);
+  const climber = walker(w, 60, 80, 1), pocket = walker(w, 160, 80, -1), stray = walker(w, 200, 56, -1);
+  let top = 80;
+  for (let i = 0; i < 6 * 60; i++) { w.update(1 / 60); top = Math.min(top, climber.y); }
+  assert.ok(top <= 58, `the stair still climbs from its foot: highest y=${top}`);
+  assert.ok(pocket.x < 100, `the pocket under the stair lets walkers out: x=${pocket.x}`);
+  assert.equal(pocket.y, 80, 'walking through bricks keeps feet on the floor');
+  assert.ok(stray.x < 150, 'a stair is still a floor for those who walk down it');
+});
 test('a basher tunnels through earth and is stopped and turned by steel', () => {
   const w = new World(arena({ skills: { bash: 2 }, total: 2, terrain: [{ x: 60, y: 40, width: 30, height: 40 }, { x: 180, y: 40, width: 20, height: 40 }, { x: 200, y: 40, width: 10, height: 40, material: 'steel' }] }));
   const l = walker(w, 50); assert.equal(w.assign(l.id, 'bash'), true); run(w, 8);

@@ -17,6 +17,7 @@ const CUES = Object.freeze({
   bomb: { wave: 'square', notes: [880, 880], length: .06, level: .4 },
   explode: { wave: 'sawtooth', notes: [220, 208, 202], length: .16, level: .5 },
   shrug: { wave: 'triangle', notes: [247], length: .1 },
+  doom: { wave: 'triangle', notes: [247, 208, 175], length: .28, level: .6 },
   defeat: { wave: 'triangle', notes: [392, 330, 262], length: .2 },
 });
 const MASTER = .5, PEAK = .4, MAX_VOICES = 24;

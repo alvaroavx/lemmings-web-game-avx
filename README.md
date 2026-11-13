@@ -17,7 +17,7 @@ Hay **diez etapas**. Cada una enseña algo nuevo: cavar, paracaídas, bloquear, 
 3. **Cavar** ya está seleccionado: pulsar sobre ese lemming para abrir un túnel vertical. Cavar es lento: los que llegan caen al hoyo y, si también se les asigna Cavar, se suman a la cuadrilla y el hoyo baja más rápido (cuatro excavadores ≈ cuatro veces uno).
 4. Cuando el túnel atraviesa la plataforma, la colonia cae sobre la isla inferior y camina hacia la salida. La plataforma superior tiene paredes en ambos extremos: sin túnel nadie se cae, pero caminan de pared a pared hasta que se acaba el tiempo.
 
-Salen diez lemmings. Hay diez asignaciones de excavador y cinco minutos. Basta con rescatar **uno de diez**, como objetivo de iniciación; el desafío completo es salvar a los diez. La evaluación ocurre al resolver la colonia completa o agotar el tiempo, no al rescatar el primero.
+Salen diez lemmings. Hay diez asignaciones de excavador y cinco minutos. Basta con rescatar **uno de diez**, como objetivo de iniciación; el desafío completo es salvar a los diez. La evaluación ocurre al resolver la colonia completa o agotar el tiempo, no al rescatar el primero. Si la etapa ya no se puede superar (no quedan lemmings suficientes, o no quedan habilidades y la colonia no llegará), aparece «SIN SALIDA» con una cuenta de 5 segundos y la etapa termina.
 
 ### Controles
 

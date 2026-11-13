@@ -1,5 +1,5 @@
 import { RULES } from './rules.js';
-import { MATERIAL } from '../engine/terrain.js';
+import { brickFor, diggable } from '../engine/terrain.js';
 
 /**
  * Skill table. Three kinds, one contract:
@@ -16,7 +16,7 @@ import { MATERIAL } from '../engine/terrain.js';
  * `role` is the lock a skill can open. Stage pieces use it (see stage/pieces.js).
  */
 const walkingOnGround = (world, l) => l.state === 'walking' && world.terrain.solid(l.x, l.y);
-const earthAt = (world, x, y) => world.terrain.at(x, y) === MATERIAL.earth;
+const earthAt = (world, x, y) => diggable(world.terrain.at(x, y));
 const earthAhead = (world, l, distance) => {
   for (let d = 1; d <= distance; d++) {
     if (earthAt(world, l.x + l.direction * d, l.y - 4) || earthAt(world, l.x + l.direction * d, l.y - 9)) return true;
@@ -100,7 +100,9 @@ export const SKILLS = Object.freeze({
   /**
    * Builder: lays 12 bricks, each 2 px higher and 4 px further; stops if its
    * head would hit terrain. While it works nobody overtakes it (`turnsWalkers`),
-   * so the colony never walks off an unfinished stair nor gets trapped under it.
+   * so the colony never walks off an unfinished stair. Bricks remember the
+   * stair's direction: walkers going the other way pass through them, so a
+   * lemming that falls under a stair (or meets its back) is never trapped.
    */
   build: Object.freeze({
     id: 'build', kind: 'job', label: 'Construir', role: 'span', turnsWalkers: true, cancellable: true, bricks: 12, period: 0.45, brick: 8, rise: 2, run: 4,
@@ -113,7 +115,7 @@ export const SKILLS = Object.freeze({
         if (!stroke(l, dt, s.period)) return;
         if (t.solid(l.x + dir * 6, l.y - 12) || t.solid(l.x + dir * 6, l.y - 7)) { stop(world, l, true); return; }
         const x = Math.floor(l.x);
-        t.fill(dir > 0 ? x : x - s.brick + 1, l.y - s.rise, s.brick, s.rise);
+        t.fill(dir > 0 ? x : x - s.brick + 1, l.y - s.rise, s.brick, s.rise, brickFor(dir));
         l.x += dir * s.run; l.y -= s.rise; l.work--;
         world.emit({ type: 'brick', x: l.x, y: l.y });
         if (l.work <= 0) stop(world, l);

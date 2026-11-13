@@ -1,12 +1,16 @@
 import { $, setText, clock } from './dom.js';
 
 const INTERVAL = 0.1;
+const DOOM_REASON = {
+  count: 'Ya no quedan lemmings suficientes para el objetivo.',
+  fate: 'No quedan habilidades y la colonia no llegará al objetivo.',
+};
 
 /** HUD and toolbar counters. Throttled; every write is skipped when unchanged. */
 export class Hud {
   constructor() {
     this.nodes = Object.fromEntries(['remaining', 'active', 'saved', 'time', 'rate', 'goal',
-      'saved-total', 'goal-total', 'slower', 'faster'].map(id => [id, $(id)]));
+      'saved-total', 'goal-total', 'slower', 'faster', 'doom', 'doom-count', 'doom-reason'].map(id => [id, $(id)]));
     this.skills = new Map(); this.elapsed = 0;
   }
   setLevel(level) {
@@ -26,6 +30,12 @@ export class Hud {
     setText(n.remaining, world.remaining); setText(n.active, world.activeCount); setText(n.saved, world.saved);
     setText(n.rate, world.rate);
     setText(n.time, clock(world.level.seconds - world.time));
+    const doomLeft = world.doomLeft;
+    n.doom.hidden = doomLeft === null || !!world.result;
+    if (doomLeft !== null) {
+      setText(n['doom-count'], Math.ceil(doomLeft));
+      setText(n['doom-reason'], DOOM_REASON[world.doom.reason] ?? '');
+    }
     n.slower.disabled = world.rate <= 50; n.faster.disabled = world.rate >= 99;
     for (const [id, { button, count }] of this.skills) {
       const left = world.inventory[id] ?? 0;
