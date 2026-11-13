@@ -1,9 +1,10 @@
 const KEY = 'avx-lemmings-v1';
-const DEFAULTS = () => ({ muted: false, best: {} });
+export const DEFAULT_MUSIC = 0.6;
+const DEFAULTS = () => ({ muted: false, music: DEFAULT_MUSIC, best: {} });
 const validCount = v => Number.isInteger(v) && v >= 0 && v <= 999;
 
 /**
- * Preferences and best rescue per level id, under one namespaced key.
+ * Preferences (mute, music volume 0–1) and best rescue per level id, under one namespaced key.
  * Accepts the legacy `{ best: <number> }` shape (stage 1 only). Any malformed
  * value or storage exception falls back to defaults.
  */
@@ -13,6 +14,7 @@ export function loadSettings(legacyLevelId = 'just-dig') {
     const settings = DEFAULTS();
     if (!raw || typeof raw !== 'object') return settings;
     settings.muted = raw.muted === true;
+    if (Number.isFinite(raw.music) && raw.music >= 0 && raw.music <= 1) settings.music = Math.round(raw.music * 10) / 10;
     if (validCount(raw.best)) settings.best[legacyLevelId] = raw.best;
     else if (raw.best && typeof raw.best === 'object') {
       for (const [id, value] of Object.entries(raw.best)) if (validCount(value)) settings.best[id] = value;
@@ -21,7 +23,7 @@ export function loadSettings(legacyLevelId = 'just-dig') {
   } catch { return DEFAULTS(); }
 }
 export function saveSettings(settings) {
-  try { localStorage.setItem(KEY, JSON.stringify({ muted: settings.muted === true, best: settings.best ?? {} })); }
+  try { localStorage.setItem(KEY, JSON.stringify({ muted: settings.muted === true, music: settings.music ?? DEFAULT_MUSIC, best: settings.best ?? {} })); }
   catch { /* Private/blocked storage must not prevent play. */ }
 }
 export const bestFor = (settings, level) => Math.min(level.total, settings.best[level.id] ?? 0);

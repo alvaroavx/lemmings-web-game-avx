@@ -1,5 +1,5 @@
-/** Smallest comfortable scale while playing: 1 CSS px per world unit (lemmings ≈ 14 px tall). */
-export const MIN_PLAY_SCALE = 1;
+/** Smallest comfortable scale while playing: 1.25 CSS px per world unit (lemmings ≈ 17 px tall). */
+export const MIN_PLAY_SCALE = 1.25;
 
 /**
  * Presentation camera. In overview mode the whole world fits the viewport.

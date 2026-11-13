@@ -18,13 +18,18 @@ export const LEVELS = freeze([
     skills: { dig: 10 },
     spawn: { x: 234, y: 80 }, exit: { x: 623, y: 248, width: 25 },
     terrain: [
-      { x: 100, y: 134, width: 616, height: 34 },
+      // Upper platform: thick enough that digging through is real work,
+      // walled at both ends so walkers turn back instead of falling off.
+      { x: 100, y: 134, width: 616, height: 56 },
+      { x: 100, y: 110, width: 12, height: 24 },
+      { x: 704, y: 110, width: 12, height: 24 },
+      // Lower island with its exit, also walled.
       { x: 116, y: 248, width: 586, height: 74 },
       { x: 116, y: 224, width: 12, height: 24 },
       { x: 690, y: 224, width: 12, height: 24 },
     ],
-    hint: 'Excava la plataforma superior para caer sobre la isla inferior. Si caminan hasta el borde, caerán al vacío.',
-    decor: { vines: [159, 185, 452, 477], vineTop: 168, sign: { x: 541, y: 248 } },
+    hint: 'Excava la plataforma superior para bajar a la isla de la salida. Sin túnel, caminarán de pared a pared hasta que se acabe el tiempo.',
+    decor: { vines: [159, 185, 452, 477], vineTop: 190, sign: { x: 541, y: 248 } },
     preview: [
       { x: 267, y: 134, state: 'walking' }, { x: 304, y: 134, state: 'walking' },
       { x: 338, y: 134, state: 'digging' }, { x: 537, y: 248, state: 'walking' },

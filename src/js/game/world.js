@@ -47,9 +47,20 @@ export class World {
     return true;
   }
   dig(id) { return this.assign(id, 'dig'); }
+  /** Stops an ongoing skill (e.g. digging) and refunds its use: the lemming walks on. */
+  cancel(id) {
+    const l = this.lemmings.find(item => item.id === id), skill = l && SKILL_BY_STATE[l.state];
+    if (this.result || !skill) return false;
+    l.state = 'walking'; l.timer = 0;
+    this.inventory[skill.id] = (this.inventory[skill.id] ?? 0) + 1;
+    this.log.push({ tick: this.tick, type: 'cancel', id });
+    this.emit({ type: 'cancel', id, skill: skill.id, x: l.x, y: l.y });
+    return true;
+  }
   apply(command) {
     if (command.type === 'assign') return this.assign(command.id, command.skill);
     if (command.type === 'rate') return this.setRate(command.rate);
+    if (command.type === 'cancel') return this.cancel(command.id);
     return false;
   }
 

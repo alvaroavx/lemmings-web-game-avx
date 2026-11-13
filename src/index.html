@@ -1,67 +1,132 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0a1114">
-  <meta name="description" content="Lemmings AVX. Una expedición de rescate en el universo Vector Field. Juega la primera etapa: Solo cava.">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#020711">
+  <meta name="description" content="Lemmings AVX. Una expedición de rescate en el universo Vector Field.">
   <title>Lemmings AVX · Vector Field</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a1114'/%3E%3Cpath d='M7 12h18v5H7z' fill='%23a4ef68'/%3E%3Cpath d='M11 17h11v7H11z' fill='%23f6d4b4'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23020711'/%3E%3Cpath d='M7 12h18v5H7z' fill='%2300ff88'/%3E%3Cpath d='M11 17h11v7H11z' fill='%23f6d4b4'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./styles/game.css">
   <script type="module" src="./js/main.js"></script>
 </head>
 <body>
-  <div class="shell">
-    <header class="masthead">
-      <a class="brand" href="./" aria-label="Lemmings AVX, inicio">LEMMINGS <span>AVX</span></a>
-      <button id="sound" class="quiet" aria-pressed="false" aria-label="Silenciar sonido">SONIDO: SÍ</button>
+  <main id="game-shell" class="game" aria-labelledby="game-title">
+    <header id="hud" class="hud" aria-label="Estado de la expedición">
+      <div class="hud__brand">LEMMINGS <span>AVX</span></div>
+      <div class="hud__metrics">
+        <div class="hud__metric hud__metric--stage"><span id="stage-number" class="hud__label">ETAPA 01</span><output id="stage-label">SOLO CAVA</output></div>
+        <div class="hud__metric"><span class="hud__label">POR SALIR</span><output id="remaining">10</output></div>
+        <div class="hud__metric"><span class="hud__label">EN CAMINO</span><output id="active">0</output></div>
+        <div class="hud__metric hud__metric--saved"><span class="hud__label">A SALVO</span><output><span id="saved">0</span><small id="saved-total"> / 10</small></output></div>
+        <div class="hud__metric"><span class="hud__label">OBJETIVO</span><output><span id="goal">1</span><small id="goal-total"> / 10</small></output></div>
+        <div class="hud__metric"><span class="hud__label">TIEMPO</span><output id="time">05:00</output></div>
+      </div>
+      <div class="hud__actions">
+        <button id="sound" class="round-button" type="button" aria-pressed="false" aria-label="Silenciar sonido">🔊</button>
+        <button id="pause" class="round-button round-button--pause" type="button" aria-label="Pausar partida">Ⅱ</button>
+      </div>
     </header>
-    <main>
-      <section id="intro" class="intro" aria-labelledby="title">
-        <div class="mission-info">
-          <p id="mission-number" class="eyebrow">ETAPA 1</p>
-          <h1 id="title">Solo cava.</h1>
-          <p id="mission-brief">10 lemmings · Rescata al menos 1 · 5 minutos</p>
-          <span id="best">MEJOR RESCATE: —</span>
+
+    <div id="stage-frame" class="stage-frame">
+      <div id="viewport" class="viewport">
+        <canvas id="world" width="800" height="360" tabindex="0" aria-label="Terreno de juego. Selecciona Cavar y pulsa un lemming que camine. Con teclado: flechas para seleccionar, Enter para cavar.">Tu navegador necesita Canvas para mostrar el juego.</canvas>
+      </div>
+      <button id="edge-left" class="edge edge-left" type="button" hidden aria-label="Lemmings a la izquierda">◀ <b>0</b></button>
+      <button id="edge-right" class="edge edge-right" type="button" hidden aria-label="Lemmings a la derecha"><b>0</b> ▶</button>
+      <div id="view-track" class="view-track" hidden aria-hidden="true"><span id="view-thumb"></span></div>
+      <p id="hint" class="field-hint">Cava un túnel para llegar a la salida.</p>
+    </div>
+
+    <div id="toolbar" class="toolbar" aria-label="Herramientas">
+      <button id="dig" class="tool tool--skill" type="button" aria-pressed="true"><span class="tool__icon" aria-hidden="true">⛏</span><span class="tool__copy"><strong>CAVAR</strong><small>HABILIDAD <kbd>D</kbd></small></span><b id="diggers">10</b></button>
+      <div class="rate-control"><span>RITMO DE SALIDA</span><div><button id="slower" class="tool tool--mini" type="button" aria-label="Reducir ritmo de salida">−</button><output id="rate">50</output><button id="faster" class="tool tool--mini" type="button" aria-label="Aumentar ritmo de salida">+</button></div></div>
+      <button id="speed" class="tool tool--speed" type="button" aria-pressed="false">×1 <span>VELOCIDAD</span></button>
+      <button id="restart" class="tool tool--restart" type="button" aria-label="Reiniciar etapa">↻ <span>REINICIAR</span></button>
+    </div>
+
+    <section id="start-screen" class="screen screen--menu" aria-labelledby="game-title">
+      <p class="screen__eyebrow">VECTOR FIELD // OPERACIÓN RESCATE</p>
+      <h1 id="game-title">LEMMINGS<br><span>AVX</span></h1>
+      <p class="screen__lede">ELIGE UNA ETAPA</p>
+      <div id="stage-list" class="menu-actions mission-picker" role="group" aria-label="Etapas disponibles"></div>
+      <div class="menu-actions menu-actions--settings">
+        <button id="help" class="button button--quiet" type="button"><span class="button__signal">?</span>CÓMO JUGAR</button>
+        <button id="open-settings" class="button button--quiet" type="button"><span class="button__signal">◇</span>CONFIGURACIÓN</button>
+      </div>
+      <div class="screen__controls" aria-label="Controles">
+        <p class="controls--keyboard"><kbd>←</kbd><kbd>→</kbd> elegir · <kbd>ENTER</kbd> cavar · <kbd>−</kbd><kbd>+</kbd> ritmo · <kbd>P</kbd> pausa</p>
+        <p>Toca un lemming para cavar. En pantallas estrechas, desliza para mover la vista.</p>
+      </div>
+    </section>
+
+    <section id="pause-screen" class="screen" hidden aria-labelledby="pause-title">
+      <p id="pause-kicker" class="screen__eyebrow">EXPEDICIÓN EN PAUSA</p>
+      <h2 id="pause-title">PAUSA</h2>
+      <p class="screen__lede">La colonia espera. El tiempo y todos los lemmings están detenidos.</p>
+      <div class="menu-actions">
+        <button id="resume" class="button button--primary" type="button"><span class="button__signal">›</span>CONTINUAR</button>
+        <button id="restart-from-pause" class="button button--quiet" type="button"><span class="button__signal">↻</span>REINICIAR ETAPA</button>
+        <button id="open-settings-pause" class="button button--quiet" type="button"><span class="button__signal">◇</span>CONFIGURACIÓN</button>
+        <button id="menu-from-pause" class="button button--quiet" type="button"><span class="button__signal">⌂</span>MENÚ PRINCIPAL</button>
+      </div>
+    </section>
+
+    <section id="restart-screen" class="screen" hidden aria-labelledby="restart-title">
+      <p class="screen__eyebrow">CONFIRMAR</p>
+      <h2 id="restart-title">¿REINICIAR?</h2>
+      <p id="restart-copy" class="screen__lede">La etapa empezará de nuevo con todos los lemmings y habilidades.</p>
+      <div class="menu-actions">
+        <button id="confirm-restart" class="button button--primary" type="button"><span class="button__signal">↻</span>REINICIAR ETAPA</button>
+        <button id="cancel-restart" class="button button--quiet" type="button"><span class="button__signal">‹</span>SEGUIR JUGANDO</button>
+      </div>
+    </section>
+
+    <section id="help-screen" class="screen screen--side" hidden aria-labelledby="help-title">
+      <div class="side-panel">
+        <p class="screen__eyebrow">MANUAL DE CAMPO</p>
+        <h2 id="help-title">CÓMO JUGAR</h2>
+        <ol class="screen__list">
+          <li>Los lemmings salen de la <b>ENTRADA</b> y caminan solos. Giran al chocar con una pared.</li>
+          <li>Toca o haz clic en un caminante para que <b>cave</b>. Cavar es lento: suma a los que caigan al hoyo y la cuadrilla avanzará más rápido. Tócalo otra vez para que deje de cavar; recuperas el uso.</li>
+          <li>Abre camino hasta la <b>SALIDA</b> y rescata al menos el objetivo antes de que se acabe el tiempo.</li>
+          <li>Las etapas se juegan en orden: supera una para abrir la siguiente.</li>
+        </ol>
+        <div class="screen__controls">
+          <p class="controls--keyboard"><kbd>←</kbd><kbd>→</kbd> elegir · <kbd>ENTER</kbd> cavar o detener</p>
+          <p class="controls--keyboard"><kbd>−</kbd><kbd>+</kbd> ritmo de salida · <kbd>P</kbd> o <kbd>ESC</kbd> pausa</p>
+          <p>Pantallas estrechas: desliza para mover la vista; ◀ ▶ llevan a los que quedaron fuera.</p>
         </div>
-        <div class="menu-actions">
-          <button id="start" class="primary"><span id="start-label">JUGAR ETAPA 1</span> <span aria-hidden="true">↗</span></button>
-          <button id="help" class="secondary">Cómo jugar</button>
-        </div>
-      </section>
-      <section id="game" aria-label="Etapa 1: Solo cava">
-        <div class="stage-heading"><span id="stage-label">ETAPA 1 / SOLO CAVA</span></div>
-        <div id="hud" class="hud" hidden>
-          <div><span>POR SALIR</span><strong id="remaining">10</strong></div>
-          <div><span>EN CAMINO</span><strong id="active">0</strong></div>
-          <div class="saved"><span>A SALVO</span><strong><span id="saved">0</span><small id="saved-total"> / 10</small></strong></div>
-          <div class="goal"><span>OBJETIVO</span><strong><span id="goal">1</span><small id="goal-total"> / 10</small></strong></div>
-          <div><span>TIEMPO</span><strong id="time">05:00</strong></div>
-          <button id="pause" class="icon-button" aria-label="Pausar partida">Ⅱ</button>
-        </div>
-        <div class="stage-frame">
-          <div id="viewport" class="viewport">
-            <canvas id="world" width="800" height="360" tabindex="0" aria-label="Terreno de juego. Selecciona Cavar y pulsa un lemming que camine. Con teclado: flechas para seleccionar, Enter para cavar.">Tu navegador necesita Canvas para mostrar el juego.</canvas>
-          </div>
-          <button id="edge-left" class="edge edge-left" hidden aria-label="Lemmings a la izquierda">◀ <b>0</b></button>
-          <button id="edge-right" class="edge edge-right" hidden aria-label="Lemmings a la derecha"><b>0</b> ▶</button>
-          <div id="view-track" class="view-track" hidden aria-hidden="true"><span id="view-thumb"></span></div>
-        </div>
-        <div id="toolbar" class="toolbar" hidden>
-          <button id="dig" class="skill" aria-pressed="true"><span class="skill-icon" aria-hidden="true">⛏</span><span><strong>CAVAR</strong><small>HABILIDAD <kbd>D</kbd></small></span><b id="diggers">10</b></button>
-          <div class="rate-control"><span>RITMO DE SALIDA</span><div><button id="slower" aria-label="Reducir ritmo de salida">−</button><output id="rate">50</output><button id="faster" aria-label="Aumentar ritmo de salida">+</button></div></div>
-          <button id="speed" class="speed" aria-pressed="false">×1 <span>VELOCIDAD</span></button>
-          <button id="restart" class="quiet restart" aria-label="Reiniciar etapa">↻ <span>REINICIAR</span></button>
-        </div>
-        <div class="field-note"><span id="hint">Cava un túnel para llegar a la salida.</span><span id="keyboard-note"></span></div>
-      </section>
-    </main>
-  </div>
-  <dialog id="modal" aria-labelledby="modal-title">
-    <form method="dialog"><button class="close" aria-label="Cerrar" value="close">×</button></form>
-    <p id="modal-kicker" class="eyebrow">EXPEDICIÓN 001</p><h2 id="modal-title"></h2><div id="modal-copy"></div>
-    <div class="modal-actions"><button id="modal-primary" class="primary"></button><button id="modal-secondary" class="secondary">Volver al menú</button></div>
-  </dialog>
-  <p id="announcement" class="sr-only" aria-live="polite"></p>
+        <div class="menu-actions"><button id="close-help" class="button button--primary" type="button"><span class="button__signal">‹</span>VOLVER</button></div>
+      </div>
+    </section>
+
+    <section id="settings-screen" class="screen" hidden aria-labelledby="settings-title">
+      <p class="screen__eyebrow">SISTEMA // AUDIO</p>
+      <h2 id="settings-title">CONFIGURACIÓN</h2>
+      <fieldset class="settings-group">
+        <legend>AUDIO</legend>
+        <button id="sound-menu" class="settings-toggle" type="button" aria-pressed="false"><span>SONIDO</span><b id="sound-menu-label">SÍ</b></button>
+        <label class="settings-range" for="music-volume"><span>MÚSICA</span><input id="music-volume" type="range" min="0" max="1" step="0.1" value="0.6"><output id="music-volume-label" for="music-volume">60%</output></label>
+        <p class="settings-note">«Marcha de la colonia»: música original de Lemmings AVX.</p>
+      </fieldset>
+      <div class="menu-actions"><button id="close-settings" class="button button--primary" type="button"><span class="button__signal">‹</span>VOLVER</button></div>
+    </section>
+
+    <section id="result-screen" class="screen" hidden aria-labelledby="result-title">
+      <p class="screen__eyebrow">INFORME DE EXPEDICIÓN</p>
+      <h2 id="result-title">TODOS EN CASA</h2>
+      <p class="result-number"><span id="result-saved">0</span><small id="result-total"> / 10</small></p>
+      <p id="result-percent" class="screen__lede screen__lede--status">LEMMINGS A SALVO · 0%</p>
+      <p id="result-copy" class="screen__lede"></p>
+      <div class="menu-actions">
+        <button id="next-stage" class="button button--primary" type="button" hidden><span class="button__signal">›</span><span id="next-stage-label">SIGUIENTE ETAPA</span></button>
+        <button id="play-again" class="button button--quiet" type="button"><span class="button__signal">↻</span>VOLVER A JUGAR</button>
+        <button id="menu-from-result" class="button button--quiet" type="button"><span class="button__signal">⌂</span>MENÚ PRINCIPAL</button>
+      </div>
+    </section>
+
+    <p id="announcement" class="visually-hidden" aria-live="polite"></p>
+  </main>
   <noscript>Activa JavaScript para jugar Lemmings AVX.</noscript>
 </body>
 </html>

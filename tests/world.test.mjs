@@ -40,17 +40,20 @@ test('first stage can rescue all ten with one digger', () => {
   const w = run(new World(), 100, solution);
   assert.equal(w.result, 'won'); assert.equal(w.saved, 10); assert.equal(w.lost, 0);
   assert.equal(w.diggers, 9); assert.equal(w.active.length, 0); assert.equal(w.activeCount, 0);
-  assert.equal(w.terrain.solid(262, 145), false);
+  assert.equal(w.terrain.solid(262, 145), false); assert.equal(w.terrain.solid(262, 185), false);
 });
-test('without excavation, walkers leave the upper ledge and miss the lower island', () => {
+test('without excavation, walled walkers pace the upper platform until time runs out', () => {
   const w = run(new World(), 100);
+  assert.equal(w.result, null); assert.equal(w.lost, 0); assert.equal(w.activeCount, 10);
+  assert.ok(w.active.every(l => l.y === 134 && l.x > 112 && l.x < 704), 'nobody falls off the ends');
+  run(w, 300);
   assert.equal(w.result, 'lost'); assert.equal(w.saved, 0); assert.equal(w.lost, 10);
 });
 test('no skill is consumed while falling, after death or on invalid targets', () => {
   const w = run(new World(), 1);
   assert.equal(w.dig(1), false); assert.equal(w.dig(999), false); assert.equal(w.assign(1, 'fly'), false);
   assert.equal(w.diggers, 10);
-  run(w, 100); assert.equal(w.dig(1), false); assert.equal(w.diggers, 10);
+  run(w, 400); assert.equal(w.result, 'lost'); assert.equal(w.dig(1), false); assert.equal(w.diggers, 10);
 });
 test('dig command cannot be assigned twice to the same worker', () => {
   const w = run(new World(), 2.5);
@@ -141,4 +144,28 @@ test('digging is slow alone and scales with a crew in the same pit', () => {
   const solo = breakthrough(1), crew = breakthrough(4);
   assert.ok(solo > 7 && solo < 8.5, `solo ${solo}s`);
   assert.ok(Math.abs(solo / crew - 4) < 0.25, `solo ${solo}s vs crew ${crew}s`);
+});
+test('cancelling a digger refunds the use, keeps the pit and the lemming walks on', () => {
+  const w = run(new World(), 2.5);
+  assert.equal(w.dig(1), true); assert.equal(w.diggers, 9);
+  run(w, 1.5);
+  const l = w.lemmings[0], depth = l.y;
+  assert.ok(depth > 134, 'some ground was dug');
+  assert.equal(w.cancel(1), true); assert.equal(w.diggers, 10); assert.equal(l.state, 'walking');
+  assert.equal(w.cancel(1), false, 'a walker has nothing to cancel'); assert.equal(w.diggers, 10);
+  assert.equal(w.terrain.solid(l.x, 135), false, 'the pit stays');
+  assert.equal(w.dig(1), true, 'the refunded use can be assigned again'); assert.equal(w.diggers, 9);
+  assert.equal(w.cancel(999), false);
+});
+test('cancel commands replay exactly', () => {
+  const live = new World();
+  for (let i = 0; i < 60 * 100 && !live.result; i++) {
+    const first = live.lemmings[0];
+    if (first?.state === 'walking' && first.x >= 262 && live.diggers === 10 && live.log.length === 0) live.dig(1);
+    if (live.tick === 400 && live.lemmings[0]?.state === 'digging') live.cancel(1);
+    if (live.tick === 520) live.dig(1);
+    live.update(1 / 60); live.drainEvents();
+  }
+  assert.ok(live.log.some(c => c.type === 'cancel'));
+  assert.equal(JSON.stringify(replay(FIRST_LEVEL, live.log)), JSON.stringify(live));
 });
