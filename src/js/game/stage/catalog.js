@@ -2,6 +2,7 @@
  * The authored campaign, as data. Each stage teaches what `teaches` lists and
  * proves it: the proof triggers come from the keys chosen in `course`, and the
  * tests check that the proof wins and that removing each taught skill loses.
+ * `music` names a variation of the colony march (platform/music.js).
  * Stage 1 is hand-drawn (raw rectangles and a manual trigger) to show that the
  * vocabulary is an aid, not a cage.
  */
@@ -32,7 +33,7 @@ export const CATALOG = [
     proof: { saves: 10, triggers: [{ skill: 'dig', x: 262, y: 134, who: 'one' }] },
   },
   {
-    id: 'umbrella', number: 2, name: 'Paracaídas', width: 800, height: 360,
+    id: 'umbrella', music: 'paracaidas', number: 2, name: 'Paracaídas', width: 800, height: 360,
     total: 10, required: 7, seconds: 240, skills: { float: 10 }, teaches: ['float'],
     brief: 'El acantilado es demasiado alto: cada lemming necesita su paracaídas.',
     hint: 'Da un paracaídas a cada lemming antes de que llegue al borde. Es permanente: basta una vez.',
@@ -43,7 +44,7 @@ export const CATALOG = [
     ],
   },
   {
-    id: 'living-wall', number: 3, name: 'Muralla viva', width: 800, height: 360,
+    id: 'living-wall', music: 'muralla-viva', number: 3, name: 'Muralla viva', width: 800, height: 360,
     total: 10, required: 8, seconds: 240, skills: { block: 2 }, teaches: ['block'],
     brief: 'La salida está detrás de ti y el camino termina en el vacío.',
     hint: 'Convierte en bloqueador al primero que se acerque al borde: los demás darán la vuelta hacia la salida.',
@@ -54,7 +55,7 @@ export const CATALOG = [
     ],
   },
   {
-    id: 'up-and-down', number: 4, name: 'Bajar y trepar', width: 800, height: 360,
+    id: 'up-and-down', music: 'bajar-y-trepar', number: 4, name: 'Bajar y trepar', width: 800, height: 360,
     total: 10, required: 7, seconds: 300, skills: { mine: 2, climb: 10 }, teaches: ['mine', 'climb'],
     brief: 'Mina en diagonal a través del suelo y luego escala el muro.',
     hint: 'Un minero abre una rampa hacia abajo. Abajo, un escalador sube muros: dáselo a cada uno antes del muro.',
@@ -67,7 +68,7 @@ export const CATALOG = [
     ],
   },
   {
-    id: 'pierce', number: 5, name: 'Atraviesa', width: 800, height: 360,
+    id: 'pierce', music: 'atraviesa', number: 5, name: 'Atraviesa', width: 800, height: 360,
     total: 10, required: 8, seconds: 240, skills: { bash: 3 }, teaches: ['bash'],
     brief: 'Dos muros de tierra separan a la colonia de su salida.',
     hint: 'Asigna Perforar junto a cada muro: el lemming abre un túnel horizontal y se detiene al salir.',
@@ -79,7 +80,7 @@ export const CATALOG = [
     ],
   },
   {
-    id: 'hold-and-blast', number: 6, name: 'Contén y detona', width: 800, height: 360,
+    id: 'hold-and-blast', music: 'conten-y-detona', number: 6, name: 'Contén y detona', width: 800, height: 360,
     total: 10, required: 7, seconds: 240, skills: { block: 1, bomb: 1 }, teaches: ['bomb'],
     brief: 'Detén a la colonia junto al precipicio y abre el suelo con una explosión.',
     hint: 'Primero un bloqueador cerca del borde. Después hazlo detonar: el cráter atraviesa el suelo delgado.',
@@ -91,7 +92,7 @@ export const CATALOG = [
     ],
   },
   {
-    id: 'stairway', number: 7, name: 'Escalera', width: 800, height: 360,
+    id: 'stairway', music: 'escalera', number: 7, name: 'Escalera', width: 800, height: 360,
     total: 10, required: 8, seconds: 300, skills: { build: 4 }, teaches: ['build'],
     brief: 'Dos escalones demasiado altos. Construye peldaños.',
     hint: 'El constructor pone 12 ladrillos. Empieza a unos 45 px del escalón; para uno doble, encadena dos constructores.',
@@ -102,7 +103,7 @@ export const CATALOG = [
     ],
   },
   {
-    id: 'steel', number: 8, name: 'Acero', width: 800, height: 360,
+    id: 'steel', music: 'acero', number: 8, name: 'Acero', width: 800, height: 360,
     total: 10, required: 8, seconds: 300, skills: { dig: 2, bash: 2, build: 2 }, teaches: ['steel'],
     brief: 'El acero no se rompe. Busca el camino por la tierra.',
     hint: 'El muro gris es acero: rodéalo por debajo. Cava, perfora el muro del túnel y construye hasta la salida.',
@@ -115,7 +116,7 @@ export const CATALOG = [
     ],
   },
   {
-    id: 'two-hatches', number: 9, name: 'Dos compuertas', width: 800, height: 360,
+    id: 'two-hatches', music: 'dos-compuertas', number: 9, name: 'Dos compuertas', width: 800, height: 360,
     total: 20, required: 15, seconds: 300, skills: { float: 10, dig: 2 }, teaches: ['hatches'],
     brief: 'Dos grupos, dos problemas, una salida.',
     hint: 'La compuerta izquierda cae a un precipicio: paracaídas. La derecha queda encerrada: cava.',
@@ -129,7 +130,7 @@ export const CATALOG = [
     proof: { saves: 15 },
   },
   {
-    id: 'the-beast', number: 10, name: 'La bestia', width: 980, height: 360,
+    id: 'the-beast', music: 'la-bestia', number: 10, name: 'La bestia', width: 980, height: 360,
     total: 12, required: 9, seconds: 420, skills: { bash: 1, dig: 1, build: 1, float: 12, block: 1 },
     teaches: ['water'],
     brief: 'Examen final: muro, suelo, agua y abismo. Inventario justo.',

@@ -76,18 +76,20 @@ Piezas sin cerradura: `start`, `run`, `hatch`, `exit`, `end`, `goto` (segunda ru
 
 ## La campaña
 
-| # | Etapa | Novedad | Llaves de la prueba |
-| --- | --- | --- | --- |
-| 1 | Solo cava | Cavar, cuadrillas | dig |
-| 2 | Paracaídas | Habilidad permanente, caída mortal | float × todos |
-| 3 | Muralla viva | Interacción entre lemmings | block |
-| 4 | Bajar y trepar | Minero (diagonal) y escalador | mine, climb × todos |
-| 5 | Atraviesa | Perforar en horizontal | bash × 2 |
-| 6 | Contén y detona | Mecha, cráter, bloquear y luego detonar | block+bomb |
-| 7 | Escalera | Construir, cadenas de constructores | build × 3 |
-| 8 | Acero | Material indestructible | dig, bash, build |
-| 9 | Dos compuertas | Varias entradas, 20 lemmings, multitarea | float × 10, dig |
-| 10 | La bestia | Agua, mapa ancho con cámara, inventario justo | bash, dig, build, float × 12 |
+| # | Etapa | Novedad | Llaves de la prueba | Música |
+| --- | --- | --- | --- | --- |
+| 1 | Solo cava | Cavar, cuadrillas | dig | marcha (Do mayor, 126) |
+| 2 | Paracaídas | Habilidad permanente, caída mortal | float × todos | Marcha en el aire (Fa, 112, ligera) |
+| 3 | Muralla viva | Interacción entre lemmings | block | Marcha de guardia (Re, frases BA) |
+| 4 | Bajar y trepar | Minero (diagonal) y escalador | mine, climb × todos | Marcha de cordada (Si♭, 132, bajo caminante) |
+| 5 | Atraviesa | Perforar en horizontal | bash × 2 | Marcha a golpes (138, batería intensa) |
+| 6 | Contén y detona | Mecha, cráter, bloquear y luego detonar | block+bomb | Marcha con mecha (Do menor, tensa) |
+| 7 | Escalera | Construir, cadenas de constructores | build × 3 | Marcha de peldaños (Mi, AABB) |
+| 8 | Acero | Material indestructible | dig, bash, build | Marcha de acero (Si♭ menor, 116) |
+| 9 | Dos compuertas | Varias entradas, 20 lemmings, multitarea | float × 10, dig | Marcha a dos voces (Re, 140, ABBA) |
+| 10 | La bestia | Agua, mapa ancho con cámara, inventario justo | bash, dig, build, float × 12 | Marcha de la bestia (Do menor, 144) |
+
+Cada etapa declara `music` con una variación del tema (`platform/music.js`). Una etapa nueva puede reutilizar una variación o añadir otra a `VARIATIONS`.
 
 ## Hacia el generador (aún no implementado)
 

@@ -25,3 +25,28 @@ test('the authored march is well-formed and stays in a speaker-friendly range', 
   assert.ok(song.lead.every(n => n.freq >= 390 && n.freq <= 1100), 'lead between G4 and C6');
   assert.ok(song.bass.every(n => n.freq >= 130 && n.freq <= 400), 'bass in octave 3');
 });
+test('every stage plays its own variation of the march, within speaker-friendly ranges', async () => {
+  const { TRACKS } = await import('../src/js/platform/music.js');
+  const { LEVELS } = await import('../src/js/game/levels.js');
+  const ids = LEVELS.map(l => l.music ?? DEFAULT_TRACK);
+  assert.equal(new Set(ids).size, LEVELS.length, 'one track per stage');
+  for (const id of ids) {
+    assert.ok(TRACKS[id], `pista ${id}`);
+    const song = compile(TRACKS[id]);
+    assert.ok(song.length >= 128 && song.lead.length > 80, id);
+    assert.ok(song.lead.every(n => n.freq >= 300 && n.freq <= 1400), `${id}: melodía en rango`);
+    assert.ok(song.bass.every(n => n.freq >= 100 && n.freq <= 540), `${id}: bajo en rango`);
+    assert.ok(song.stepSeconds > 0.19 && song.stepSeconds < 0.28, `${id}: tempo jugable`);
+  }
+});
+test('variations really change the music: key, mode, groove and phrase order', async () => {
+  const { TRACKS } = await import('../src/js/platform/music.js');
+  const base = compile(TRACKS[DEFAULT_TRACK]);
+  const minor = compile(TRACKS['acero']), floaty = compile(TRACKS['paracaidas']), long = compile(TRACKS['escalera']);
+  assert.ok(Math.abs(base.lead[1].freq - 659.26) < 0.01 && Math.abs(minor.lead[1].freq - 659.26 * 2 ** (-3 / 12)) < 0.01,
+    'E5 becomes E♭5, then down a tone in Acero');
+  assert.ok(Math.abs(floaty.lead[0].freq / base.lead[0].freq - 2 ** (5 / 12)) < 1e-9, 'Paracaídas sounds a fourth higher');
+  assert.ok(floaty.drums.length < base.drums.length && floaty.duty === 0.125, 'a lighter groove and a thinner pulse');
+  assert.equal(long.length, 256, 'AABB doubles the loop');
+  assert.throws(() => compile({ ...TRACKS[DEFAULT_TRACK], drums: 'polka' }), /Variación desconocida/);
+});

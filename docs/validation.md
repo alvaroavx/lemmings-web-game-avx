@@ -1,5 +1,18 @@
 # Validación local
 
+## 2026-11-13 — iteración 9 (música por etapa)
+
+- **`npm test`: 64 casos.** Cada etapa tiene su propia pista. Todas quedan con la melodía entre 300 y 1400 Hz, el bajo entre 100 y 540 Hz y un tempo jugable. Las variaciones cambian de verdad el tono (Paracaídas suena una cuarta arriba), el modo (en Acero, el Mi5 pasa a Mi♭ y luego baja un tono), la batería, el pulso y la longitud (AABB dobla el bucle). Una variación desconocida se rechaza.
+- **Chrome sin interfaz, interceptando `OscillatorNode.start`.** Al pulsar cada etapa en el menú:
+  - etapa 1: Do mayor, paso de 0,2381 s (126 BPM);
+  - etapa 2: empieza en Fa5 (698 Hz), paso de 0,2679 s (112 BPM);
+  - etapa 6: aparece Mi♭5 (622 Hz) y hay más bombos;
+  - etapa 8: Si♭ menor, paso de 0,2586 s;
+  - etapa 10: paso de 0,2083 s (144 BPM), con bajo caminante Do, Mi♭, Sol, Mi♭.
+
+  Sin errores de consola.
+- **No verificado de oído:** cómo suena cada variación y el balance con los efectos.
+
 ## 2026-11-13 — iteración 8 (arquitectura de etapas y etapas 2–10)
 
 **Pruebas (`npm test`, 62 casos):**

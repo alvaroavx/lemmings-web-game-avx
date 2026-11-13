@@ -6,6 +6,12 @@
  * staccato arpeggios; phrase B wanders into A minor before marching home.
  * Voices: 25 % pulse lead, triangle oom-pah bass, noise/sine drum kit.
  *
+ * Theme and variations: every stage plays the same march, transformed by a
+ * VARIATION (data): key, parallel minor, tempo, lead octave and pulse width,
+ * drum groove, bass figure and phrase order. The colony keeps its tune while
+ * each stage gets its own mood; a future stage generator can pick or combine
+ * variations the same way.
+ *
  * A short look-ahead scheduler (setInterval in the platform layer, never in
  * the simulation) queues notes on the AudioContext clock, so timing stays
  * exact even when frames drop. Pausing stops sounding notes and keeps the
@@ -34,41 +40,96 @@ const MARCH = Object.freeze({
   // Drum roll on the last beat of every phrase (bars 8 and 16).
   rolls: [7, 15],
 });
-export const TRACKS = Object.freeze({ [MARCH.id]: MARCH });
+
+/**
+ * Variation fields (all optional): title, bpm, transpose (semitones), minor
+ * (parallel minor: E, A, B lowered), octave (lead only), duty (lead pulse
+ * width), drums ('march' | 'half' | 'drive' | 'none'), bass ('oompah' |
+ * 'pedal' | 'walk'), order (phrase letters, A = bars 1–8, B = bars 9–16).
+ */
+const VARIATIONS = Object.freeze({
+  'paracaidas': { title: 'Marcha en el aire', transpose: 5, bpm: 112, duty: 0.125, drums: 'half', bass: 'pedal' },
+  'muralla-viva': { title: 'Marcha de guardia', transpose: 2, bpm: 120, order: 'BA' },
+  'bajar-y-trepar': { title: 'Marcha de cordada', transpose: -2, bpm: 132, bass: 'walk' },
+  'atraviesa': { title: 'Marcha a golpes', bpm: 138, duty: 0.5, drums: 'drive' },
+  'conten-y-detona': { title: 'Marcha con mecha', minor: true, bpm: 120, drums: 'drive', bass: 'pedal' },
+  'escalera': { title: 'Marcha de peldaños', transpose: 4, bpm: 128, bass: 'walk', order: 'AABB' },
+  'acero': { title: 'Marcha de acero', minor: true, transpose: -2, bpm: 116, duty: 0.125 },
+  'dos-compuertas': { title: 'Marcha a dos voces', transpose: 2, bpm: 140, bass: 'walk', order: 'ABBA' },
+  'la-bestia': { title: 'Marcha de la bestia', minor: true, bpm: 144, duty: 0.5, drums: 'drive', bass: 'walk', order: 'AABB' },
+});
+export const TRACKS = Object.freeze({ [MARCH.id]: MARCH,
+  ...Object.fromEntries(Object.entries(VARIATIONS).map(([id, v]) => [id, Object.freeze({ ...MARCH, ...v, id })])) });
 export const DEFAULT_TRACK = MARCH.id;
 
 const SEMITONE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-const frequency = name => {
+const MINOR = new Set([4, 9, 11]); // C major → C minor (natural): E, A and B go down a semitone
+const midiOf = name => {
   const m = /^([A-G])(#?)(\d)$/.exec(name);
-  const midi = 12 * (Number(m[3]) + 1) + SEMITONE[m[1]] + (m[2] ? 1 : 0);
-  return 440 * 2 ** ((midi - 69) / 12);
+  return 12 * (Number(m[3]) + 1) + SEMITONE[m[1]] + (m[2] ? 1 : 0);
 };
-const ROOT = { C: 'C3', D: 'D3', E: 'E3', F: 'F3', G: 'G3', A: 'A3', B: 'B3' };
+const hz = midi => 440 * 2 ** ((midi - 69) / 12);
+/** Note name → frequency, after the variation's mode and key. */
+const pitch = (name, { minor = false, transpose = 0 } = {}, shift = 0) => {
+  const midi = midiOf(name);
+  return hz(midi - (minor && MINOR.has(midi % 12) ? 1 : 0) + transpose + shift);
+};
+/** Chord third in semitones. In minor mode C and F turn minor; lowered roots (E♭, A♭, B♭) turn major; G stays the dominant. */
+const third = (chord, minor) => {
+  if (!minor) return chord.endsWith('m') ? 3 : 4;
+  if ('CF'.includes(chord[0])) return 3;
+  if ('EAB'.includes(chord[0])) return 4;
+  return chord.endsWith('m') ? 3 : 4;
+};
+const BASS = {
+  oompah: (root, fifth) => [{ at: 0, freq: root, steps: 1.6 }, { at: 2, freq: fifth, steps: 1.2 }],
+  pedal: root => [{ at: 0, freq: root, steps: 3.6 }],
+  walk: (root, fifth, third) => [{ at: 0, freq: root, steps: 0.9 }, { at: 1, freq: third, steps: 0.9 },
+    { at: 2, freq: fifth, steps: 0.9 }, { at: 3, freq: third, steps: 0.9 }],
+};
+const DRUMS = {
+  march: [[0, 'kick'], [4, 'kick'], [2, 'snare'], [6, 'snare'], [1, 'hat'], [3, 'hat'], [5, 'hat'], [7, 'hat']],
+  half: [[0, 'kick'], [4, 'snare'], [2, 'hat'], [6, 'hat']],
+  drive: [[0, 'kick'], [2, 'kick'], [4, 'kick'], [6, 'kick'], [2, 'snare'], [6, 'snare'],
+    ...Array.from({ length: 16 }, (_, i) => [i / 2, 'hat'])],
+  none: [],
+};
+/** Phrase letters → bar indices of the 16-bar theme (A = 0–7, B = 8–15). */
+const arrangeBars = (order, bars) => order
+  ? [...order].flatMap(letter => Array.from({ length: 8 }, (_, i) => (letter === 'B' ? 8 : 0) + i))
+  : Array.from({ length: bars }, (_, i) => i);
 
-/** Turns the authored strings into timed events: { step, freq, steps }. */
+/**
+ * Turns the authored strings, transformed by the track's variation fields,
+ * into timed events: { step, freq, steps } and drum hits. Every bar is
+ * validated, even bars the arrangement does not play.
+ */
 export function compile(track) {
   const lead = [], bass = [], drums = [];
-  track.lead.forEach((bar, b) => {
+  const key = { minor: !!track.minor, transpose: track.transpose ?? 0 }, octave = (track.octave ?? 0) * 12;
+  const bassFigure = BASS[track.bass ?? 'oompah'], groove = DRUMS[track.drums ?? 'march'];
+  if (!bassFigure || !groove) throw new Error(`Variación desconocida: ${track.bass ?? ''} ${track.drums ?? ''}`);
+  const parsed = track.lead.map((bar, b) => {
     const tokens = bar.trim().split(/\s+/);
     if (tokens.length !== STEPS_PER_BAR) throw new Error(`Compás ${b + 1}: se esperan ${STEPS_PER_BAR} tiempos`);
-    tokens.forEach((token, i) => {
-      const step = b * STEPS_PER_BAR + i;
-      if (token === '-') { if (lead.length) lead.at(-1).steps++; }
-      else if (token !== '.') lead.push({ step, freq: frequency(token), steps: 1 });
-    });
+    return tokens;
   });
-  track.chords.forEach((bar, b) => bar.split(' ').forEach((chord, half) => {
-    const root = frequency(ROOT[chord[0]]), step = b * STEPS_PER_BAR + half * 4;
-    const fifth = root * 2 ** (7 / 12);
-    bass.push({ step, freq: root, steps: 1.6 }, { step: step + 2, freq: fifth, steps: 1.2 });
-  }));
-  for (let b = 0; b < track.lead.length; b++) {
-    const s = b * STEPS_PER_BAR;
-    drums.push({ step: s, kind: 'kick' }, { step: s + 4, kind: 'kick' }, { step: s + 2, kind: 'snare' }, { step: s + 6, kind: 'snare' });
-    for (const odd of [1, 3, 5, 7]) drums.push({ step: s + odd, kind: 'hat' });
-    if (track.rolls.includes(b)) drums.push({ step: s + 7, kind: 'snare' }, { step: s + 7.5, kind: 'snare' });
-  }
-  return { length: track.lead.length * STEPS_PER_BAR, stepSeconds: 60 / track.bpm / 2, lead, bass, drums };
+  const bars = arrangeBars(track.order, parsed.length);
+  bars.forEach((b, position) => {
+    const s = position * STEPS_PER_BAR;
+    parsed[b].forEach((token, i) => {
+      if (token === '-') { if (lead.length) lead.at(-1).steps++; }
+      else if (token !== '.') lead.push({ step: s + i, freq: pitch(token, key, octave), steps: 1 });
+    });
+    track.chords[b].split(' ').forEach((chord, half) => {
+      const root = pitch(`${chord[0]}3`, key);
+      const fifth = root * 2 ** (7 / 12), third3 = root * 2 ** (third(chord, key.minor) / 12);
+      for (const n of bassFigure(root, fifth, third3)) bass.push({ step: s + half * 4 + n.at, freq: n.freq, steps: n.steps });
+    });
+    for (const [at, kind] of groove) drums.push({ step: s + at, kind });
+    if (track.rolls.includes(b) && groove.length) drums.push({ step: s + 7, kind: 'snare' }, { step: s + 7.5, kind: 'snare' });
+  });
+  return { length: bars.length * STEPS_PER_BAR, stepSeconds: 60 / track.bpm / 2, duty: track.duty ?? 0.25, lead, bass, drums };
 }
 
 export class Music {
@@ -109,7 +170,7 @@ export class Music {
   ensureBus(c) {
     if (this.bus?.context === c) { this.bus.gain.value = this.level(); return; }
     this.bus = c.createGain(); this.bus.gain.value = this.level(); this.bus.connect(c.destination);
-    this.pulse = c.createPeriodicWave(...pulseWave(0.25));
+    this.pulses = new Map();
     const noise = c.createBuffer(1, c.sampleRate, c.sampleRate), data = noise.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1; // presentation only, not simulation
     this.noise = noise;
@@ -127,9 +188,15 @@ export class Music {
   }
   queue(step, at, dt) {
     const { lead, bass, drums } = this.song;
-    for (const n of lead) if (n.step === step) this.tone(this.pulse, n.freq, at, n.steps * dt * 0.82, 0.16);
+    const pulse = this.pulseFor(this.song.duty);
+    for (const n of lead) if (n.step === step) this.tone(pulse, n.freq, at, n.steps * dt * 0.82, 0.16);
     for (const n of bass) if (n.step === step) this.tone('triangle', n.freq, at, n.steps * dt * 0.7, 0.34);
     for (const d of drums) if (Math.floor(d.step) === step) this.drum(d.kind, at + (d.step % 1) * dt);
+  }
+  /** One periodic wave per pulse width, built once per AudioContext. */
+  pulseFor(duty) {
+    if (!this.pulses.has(duty)) this.pulses.set(duty, this.audio.context.createPeriodicWave(...pulseWave(duty)));
+    return this.pulses.get(duty);
   }
   tone(wave, freq, at, length, peak) {
     const c = this.audio.context, osc = c.createOscillator(), gain = c.createGain();
