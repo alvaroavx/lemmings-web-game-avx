@@ -9,10 +9,16 @@ src/js/
   main.js            raíz de composición: crea adaptadores y arranca la app
   engine/            genérico y puro (sin navegador, sin azar, sin reloj real)
     clock.js         acumulador de paso fijo acotado
-    terrain.js       máscara binaria destructible con historial de regiones
+    terrain.js       máscara de materiales (tierra, acero) con historial de regiones
   game/              reglas de Lemmings, puras y deterministas
-    levels.js        datos de etapas + validación de autoría
-    skills.js        tabla de habilidades (contrato canAssign/begin/update)
+    rules.js         constantes físicas compartidas
+    skills.js        tabla de 8 habilidades: job / trait / fuse, con hooks
+    levels.js        LEVELS compilados, normalización y validación de autoría
+    autoplay.js      jugador determinista de pruebas de etapa
+    stage/
+      pieces.js      vocabulario de ruta: piezas, cerraduras y llaves
+      compile.js     tortuga de ruta: spec → nivel + prueba
+      catalog.js     la campaña de 10 etapas, como datos
     world.js         simulación, comandos validados y registro por tick
     replay.js        reconstrucción exacta de una partida desde su registro
   view/
@@ -25,6 +31,7 @@ src/js/
     storage.js       preferencias y mejor rescate por etapa, tolerante a fallos
   app/               interfaz HTML y coordinación
     game-app.js      máquina de estados, entradas → comandos, eventos → UI
+    skill-ui.js      iconos y textos de cada habilidad
     hud.js           contadores con escritura acotada
     screens.js       pantallas completas (menú, pausa, reinicio, ayuda, resultado)
     dom.js           utilidades sin innerHTML
@@ -38,7 +45,7 @@ Dependencias permitidas: `app → game, view, platform, engine`; `view → (lee)
 
 **Comandos.** Toda acción del jugador pasa por `world.assign(id, skill)` o `world.setRate(rate)`. Ambos validan, devuelven `false` sin efectos si no proceden y, cuando proceden, se registran en `world.log` como `{ tick, type, ... }`. El inventario solo baja después de que `canAssign` aprueba. Un mundo terminado rechaza comandos y no cambia con nuevas actualizaciones.
 
-**Detener una habilidad.** `world.cancel(id)` detiene a un lemming que está ejecutando una habilidad con estado propio (hoy, cavar): vuelve a caminar desde donde está, el hoyo queda y el uso vuelve al inventario. Es un comando más: se valida, se registra y se repite. Un caminante no tiene nada que cancelar.
+**Detener una habilidad.** `world.cancel(id)` detiene a un lemming que está ejecutando una habilidad marcada `cancellable` (cavar, perforar, minar, construir): vuelve a caminar desde donde está, el hoyo queda y el uso vuelve al inventario. Es un comando más: se valida, se registra y se repite. Un caminante no tiene nada que cancelar. Bloquear no se cancela: la etapa 6 enseña a liberar al bloqueador detonándolo. La interfaz solo cancela si la habilidad elegida coincide con el trabajo del lemming; así, tocar a un constructor con Detonar seleccionado le asigna la bomba.
 
 **Repetición.** `replay(level, log)` crea un mundo nuevo y aplica cada comando antes del `update` de su tick, igual que en la partida en vivo. La prueba compara el JSON completo del mundo repetido con el original. Sirve para reproducir errores, para pruebas de regresión y, más adelante, para fantasmas o soluciones compartidas. Si cambian las reglas, los registros antiguos dejan de ser válidos: habrá que versionarlos cuando se guarden.
 
@@ -50,15 +57,25 @@ Dependencias permitidas: `app → game, view, platform, engine`; `view → (lee)
 
 El mundo lógico de la etapa 1 mide **800×360**. La plataforma superior tiene 56 px de grosor y paredes de 24 px en ambos extremos; la isla inferior, con la salida, también está amurallada. `Terrain` es un `Uint8Array` de 288 000 bytes y es la única fuente de colisión y del suelo dibujado. Los rectángulos de autoría no cuentan como cambios. Cada `clear`/`fill` que modifica celdas incrementa `revision` y guarda el rectángulo tocado (hasta 128). `changedSince(revision)` devuelve la unión de regiones posteriores sin mutar nada; si el observador está más atrasado que el historial, devuelve el terreno entero.
 
-Reglas de un caminante (`RULES` en `world.js`):
+Reglas de un caminante (`RULES` en `rules.js`):
 
 - Los pies están sobre la primera fila sólida.
 - Sube escalones de hasta `stepUp = 4` píxeles y baja hasta `stepDown = 3` sin pasar a estado de caída.
 - Gira ante un obstáculo más alto que un escalón, comprobado `wallProbe = 3` píxeles por delante. Así nunca camina dentro del terreno.
 - Cae cuando no hay suelo. La caída recorre las filas cruzadas para no atravesar suelos finos, y morir depende de la altura (`safeFall = 125`).
-- Se pierde al salir del mundo. Se salva al caminar dentro del rectángulo de la salida.
+- Se pierde al salir del mundo o al entrar en agua. Se salva al caminar dentro del rectángulo de cualquier salida.
+- Da la vuelta ante un lemming que bloquea o construye (`turnsWalkers`), a ≤ 6 px por delante.
 
-**Habilidades.** `skills.js` define cada habilidad con `canAssign`, `begin` y `update`, además del estado que controla. World despacha por estado: un lemming en `digging` lo actualiza la habilidad `dig`; `walking` y `falling` son movimiento base.
+**Materiales.** Cada celda vale 0 (vacío), 1 (tierra) o 2 (acero). `solid` es «distinto de 0». Las habilidades usan `carve`, que solo quita tierra e informa del acero encontrado para detenerse; las explosiones usan `carveDisc`.
+
+**Habilidades.** `skills.js` define tres tipos con un solo contrato (`canAssign`, `begin`):
+- *job* (`dig`, `bash`, `mine`, `build`, `block`): cambian el estado; `states` asocia cada estado a su actualizador y World despacha con `SKILL_BY_STATE`.
+- *trait* (`climb`, `float`): permanentes en `lemming.traits`; reaccionan con `hooks.wall` (escalar en vez de girar), `hooks.fallCap` y `hooks.survives` (caer lento y sin morir).
+- *fuse* (`bomb`): un temporizador en `traits` que avanza con `hooks.tick` y llama a `world.explode`.
+
+World no nombra ninguna habilidad: despacha estados y pregunta a los hooks de los rasgos del lemming, en el orden en que se asignaron. Cuando no quedan por salir y solo quedan bloqueadores, la etapa se resuelve: no podrían cambiar nada.
+
+**Etapas.** Se escriben como rutas de piezas con cerraduras y llaves, y cada una trae su prueba ejecutable. Ver [stages.md](stages.md).
 
 **Cavar es trabajo en cuadrilla.** Un excavador borra una franja de 16×2 cada **0,48 s**: atravesar los 56 px de la plataforma superior de la etapa 1 lleva unos 13 s. Si se asigna Cavar a otro lemming dentro del mismo hoyo (a ≤ 8 px del eje y ≤ 12 px de altura de otro excavador), se alinea con ese eje. Cada excavador sigue cada tick el suelo compartido que la cuadrilla va bajando (hasta 12 px), así que el hoyo avanza en proporción: dos lo hacen el doble de rápido y cuatro, unas cuatro veces (≈ 3,4 s si trabajan juntos desde el principio). Sin suelo a menos de 12 px, el excavador cae. Mientras se cava, los que llegan caen al hoyo y quedan atrapados entre sus paredes hasta que se abre, listos para sumarse. La vista separa unos píxeles a los miembros de la cuadrilla para que se lean como grupo; en World comparten la misma x.
 
@@ -112,9 +129,8 @@ Persistencia: una sola clave, `avx-lemmings-v1`, con `{ muted, music, best: { [l
 
 ## Cómo extender
 
-- **Nueva etapa:** añadir un objeto a `LEVELS`. `levelErrors` valida dimensiones, inventario, rectángulos dentro del mundo, entrada fuera del terreno y salida apoyada en una superficie. Añadir pruebas de solución y de derrota. La selección de etapa en el menú se añadirá cuando exista la segunda.
-- **Nueva habilidad:** añadir una entrada a `SKILLS` con su estado, su pose en `drawLemming`, un botón en la barra y sus pruebas. El bucle de World no cambia. Bloqueadores u otras interacciones entre lemmings necesitarán una consulta espacial en World, que hoy no existe porque no hace falta.
-- **Materiales:** si un nivel necesita acero o suelo indestructible, ampliar la máscara a valores por material (0 = vacío) sin romper `solid`.
+- **Nueva etapa, pieza o habilidad:** ver [stages.md](stages.md). Las pruebas de `tests/stages.test.mjs` cubren automáticamente cualquier etapa nueva del catálogo.
+- **Materiales:** añadir un valor a `MATERIAL` y decidir qué hace `carve` con él.
 - **Niveles grandes:** medir antes. Las vías previstas son una cámara con desplazamiento en `Surface` y fragmentar el bitmap del terreno en baldosas.
 
 ## Origen

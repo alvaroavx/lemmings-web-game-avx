@@ -169,3 +169,7 @@ test('cancel commands replay exactly', () => {
   assert.ok(live.log.some(c => c.type === 'cancel'));
   assert.equal(JSON.stringify(replay(FIRST_LEVEL, live.log)), JSON.stringify(live));
 });
+test('blockers and climbers cannot be cancelled', () => {
+  const w = run(new World({ ...FIRST_LEVEL, skills: { dig: 1, block: 1 } }), 2.5);
+  assert.equal(w.assign(1, 'block'), true); assert.equal(w.cancel(1), false); assert.equal(w.inventory.block, 0);
+});

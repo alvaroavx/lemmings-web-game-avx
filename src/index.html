@@ -29,7 +29,7 @@
 
     <div id="stage-frame" class="stage-frame">
       <div id="viewport" class="viewport">
-        <canvas id="world" width="800" height="360" tabindex="0" aria-label="Terreno de juego. Selecciona Cavar y pulsa un lemming que camine. Con teclado: flechas para seleccionar, Enter para cavar.">Tu navegador necesita Canvas para mostrar el juego.</canvas>
+        <canvas id="world" width="800" height="360" tabindex="0" aria-label="Terreno de juego. Elige una habilidad y pulsa un lemming. Con teclado: números para la habilidad, flechas para el lemming, Enter para asignar.">Tu navegador necesita Canvas para mostrar el juego.</canvas>
       </div>
       <button id="edge-left" class="edge edge-left" type="button" hidden aria-label="Lemmings a la izquierda">◀ <b>0</b></button>
       <button id="edge-right" class="edge edge-right" type="button" hidden aria-label="Lemmings a la derecha"><b>0</b> ▶</button>
@@ -38,7 +38,7 @@
     </div>
 
     <div id="toolbar" class="toolbar" aria-label="Herramientas">
-      <button id="dig" class="tool tool--skill" type="button" aria-pressed="true"><span class="tool__icon" aria-hidden="true">⛏</span><span class="tool__copy"><strong>CAVAR</strong><small>HABILIDAD <kbd>D</kbd></small></span><b id="diggers">10</b></button>
+      <div id="skills" class="skill-bar" role="group" aria-label="Habilidades"></div>
       <div class="rate-control"><span>RITMO DE SALIDA</span><div><button id="slower" class="tool tool--mini" type="button" aria-label="Reducir ritmo de salida">−</button><output id="rate">50</output><button id="faster" class="tool tool--mini" type="button" aria-label="Aumentar ritmo de salida">+</button></div></div>
       <button id="speed" class="tool tool--speed" type="button" aria-pressed="false">×1 <span>VELOCIDAD</span></button>
       <button id="restart" class="tool tool--restart" type="button" aria-label="Reiniciar etapa">↻ <span>REINICIAR</span></button>
@@ -54,8 +54,8 @@
         <button id="open-settings" class="button button--quiet" type="button"><span class="button__signal">◇</span>CONFIGURACIÓN</button>
       </div>
       <div class="screen__controls" aria-label="Controles">
-        <p class="controls--keyboard"><kbd>←</kbd><kbd>→</kbd> elegir · <kbd>ENTER</kbd> cavar · <kbd>−</kbd><kbd>+</kbd> ritmo · <kbd>P</kbd> pausa</p>
-        <p>Toca un lemming para cavar. En pantallas estrechas, desliza para mover la vista.</p>
+        <p class="controls--keyboard"><kbd>←</kbd><kbd>→</kbd> elegir · <kbd>ENTER</kbd> asignar · <kbd>1</kbd>–<kbd>8</kbd> habilidad · <kbd>P</kbd> pausa</p>
+        <p>Toca un lemming para asignarle la habilidad elegida. En pantallas estrechas, desliza para mover la vista.</p>
       </div>
     </section>
 
@@ -87,12 +87,14 @@
         <h2 id="help-title">CÓMO JUGAR</h2>
         <ol class="screen__list">
           <li>Los lemmings salen de la <b>ENTRADA</b> y caminan solos. Giran al chocar con una pared.</li>
-          <li>Toca o haz clic en un caminante para que <b>cave</b>. Cavar es lento: suma a los que caigan al hoyo y la cuadrilla avanzará más rápido. Tócalo otra vez para que deje de cavar; recuperas el uso.</li>
+          <li>Elige una habilidad en la barra inferior y toca o haz clic en un lemming para asignársela. Cada etapa trae sus habilidades y un número limitado de usos.</li>
+          <li>Tocar con la misma habilidad a quien <b>cava, perfora, mina o construye</b> lo detiene y devuelve el uso. Un bloqueador solo se libera haciéndolo detonar.</li>
+          <li><b>Paracaídas</b> y <b>Escalar</b> son permanentes. <b>Detonar</b> explota a los 4 s. Quien bloquea o construye hace dar la vuelta a los demás. El acero gris no se rompe y el agua ahoga.</li>
           <li>Abre camino hasta la <b>SALIDA</b> y rescata al menos el objetivo antes de que se acabe el tiempo.</li>
           <li>Las etapas se juegan en orden: supera una para abrir la siguiente.</li>
         </ol>
         <div class="screen__controls">
-          <p class="controls--keyboard"><kbd>←</kbd><kbd>→</kbd> elegir · <kbd>ENTER</kbd> cavar o detener</p>
+          <p class="controls--keyboard"><kbd>1</kbd>–<kbd>8</kbd> habilidad · <kbd>←</kbd><kbd>→</kbd> elegir · <kbd>ENTER</kbd> asignar o detener · <kbd>D</kbd> cavar</p>
           <p class="controls--keyboard"><kbd>−</kbd><kbd>+</kbd> ritmo de salida · <kbd>P</kbd> o <kbd>ESC</kbd> pausa</p>
           <p>Pantallas estrechas: desliza para mover la vista; ◀ ▶ llevan a los que quedaron fuera.</p>
         </div>

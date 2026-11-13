@@ -10,6 +10,8 @@ python3 server.py
 
 Abrir **http://127.0.0.1:8081** (otro puerto: `python3 server.py --port 8082`). Python 3 sirve `src/`; no hay instalaciones npm ni dependencias de ejecución. También se puede publicar el contenido de `src/` en cualquier alojamiento estático, incluso bajo un subdirectorio. Abrir `index.html` mediante `file://` no es compatible con los módulos ES.
 
+Hay **diez etapas**. Cada una enseña algo nuevo: cavar, paracaídas, bloquear, minar y escalar, perforar, detonar, construir, acero, dos compuertas y un examen final con agua en un mapa ancho. En la barra inferior aparecen solo las habilidades de la etapa, con sus usos restantes.
+
 1. En el menú principal, a pantalla completa, elegir la etapa **01 · Solo cava**. Cada etapa muestra su objetivo y tu mejor rescate.
 2. Esperar a que el primer lemming caiga sobre la plataforma superior.
 3. **Cavar** ya está seleccionado: pulsar sobre ese lemming para abrir un túnel vertical. Cavar es lento: los que llegan caen al hoyo y, si también se les asigna Cavar, se suman a la cuadrilla y el hoyo baja más rápido (cuatro excavadores ≈ cuatro veces uno).
@@ -21,10 +23,10 @@ Salen diez lemmings. Hay diez asignaciones de excavador y cinco minutos. Basta c
 
 | Acción | Control |
 | --- | --- |
-| Asignar excavador | Clic o toque sobre un caminante (en un hoyo, se suma a la cuadrilla) |
-| Detener a un excavador | Clic o toque sobre él (o `Enter` si está seleccionado): sigue caminando y el uso vuelve al inventario |
+| Asignar la habilidad elegida | Clic o toque sobre un lemming (Cavar en un hoyo se suma a la cuadrilla) |
+| Detener a quien cava, perfora, mina o construye | Clic o toque sobre él con esa misma habilidad elegida (o `Enter`): sigue caminando y el uso vuelve |
 | Mover la vista (pantallas estrechas) | Deslizar el dedo, rueda del ratón o indicadores ◀ ▶ de los bordes |
-| Enfocar terreno y seleccionar Cavar | `D` o botón Cavar |
+| Elegir habilidad | Botones de la barra, teclas `1`–`8` en su orden, `D` para Cavar |
 | Elegir lemming con terreno enfocado | `←` / `→` |
 | Asignar al seleccionado | `Enter` |
 | Pausar | `P`, `Escape` o botón `Ⅱ` |
@@ -53,6 +55,6 @@ Las pruebas usan `node:test` sin dependencias: reglas, repetición exacta desde 
 
 ## Alcance
 
-Una sola etapa y una habilidad implementada, sobre un motor preparado para más: etapas como datos validados, habilidades en una tabla, comandos registrados y repetibles, terreno con repintado por regiones. El menú principal lista todas las etapas de `LEVELS` en orden lineal, como en 1991: cada etapa se abre al superar la anterior. Al superar una, el resultado ofrece la siguiente. Sin cuentas, telemetría ni backend de partidas. El diseño del mapa es una adaptación propia, no una reproducción exacta del archivo de nivel original. La siguiente etapa debe añadirse como datos y reglas comprobables antes de introducir un editor o un motor general.
+Diez etapas y ocho habilidades (Escalar, Paracaídas, Detonar, Bloquear, Construir, Perforar, Minar, Cavar), con tierra, acero y agua. Las etapas son rutas de piezas con cerraduras y llaves, y cada una trae una prueba ejecutable: gana, se repite idéntica y cada habilidad que enseña es necesaria ([cómo se construyen las etapas](docs/stages.md)). El mismo vocabulario y la misma verificación son la base del futuro generador de etapas aleatorias, que todavía no existe. El menú principal lista todas las etapas de `LEVELS` en orden lineal, como en 1991: cada etapa se abre al superar la anterior. Al superar una, el resultado ofrece la siguiente. Sin cuentas, telemetría ni backend de partidas. Los mapas son diseños propios que siguen la progresión didáctica del clásico, no reproducciones de sus niveles.
 
 La música, «Marcha de la colonia», es una composición original de este proyecto, sintetizada en el navegador (`src/js/platform/music.js`): no hay archivos de audio. Las fuentes Noto Sans Mono se reutilizan desde Vector Field con su [licencia OFL](src/assets/fonts/LICENSE-OFL-1.1.txt). Lemmings es el referente del laboratorio; este proyecto no afirma afiliación oficial.

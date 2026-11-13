@@ -1,6 +1,7 @@
 import { Clock } from '../engine/clock.js';
 import { World } from '../game/world.js';
-import { SKILLS } from '../game/skills.js';
+import { SKILLS, SKILL_ORDER, SKILL_OF_STATE } from '../game/skills.js';
+import { SKILL_UI } from './skill-ui.js';
 import { $, setText, el } from './dom.js';
 import { Hud } from './hud.js';
 import { Screens } from './screens.js';
@@ -9,7 +10,8 @@ import { DEFAULT_TRACK } from '../platform/music.js';
 
 const TAP_SLOP = 10; // CSS px a finger may drift and still count as a tap
 const TIE = 3; // world units: a walker this close to a tapped worker counts as the same spot
-const STATE_LABEL = { walking: 'caminando', falling: 'cayendo', digging: 'cavando' };
+const STATE_LABEL = { walking: 'caminando', falling: 'cayendo', digging: 'cavando', climbing: 'escalando',
+  blocking: 'bloqueando', building: 'construyendo', bashing: 'perforando', mining: 'minando' };
 const pad = n => String(n).padStart(2, '0');
 
 /**
@@ -49,7 +51,33 @@ export class GameApp {
     setText($('stage-number'), `ETAPA ${pad(level.number)}`);
     setText($('stage-label'), level.name.toUpperCase());
     $('stage-frame').setAttribute('aria-label', `Etapa ${level.number}: ${level.name}`);
-    this.hud.setLevel(level); this.hud.tick(this.world, 0, true);
+    this.hud.setLevel(level); this.buildToolbar(level); this.hud.tick(this.world, 0, true);
+  }
+  /** One button per skill in the stage inventory, in canonical order; keys 1–8. */
+  buildToolbar(level) {
+    const ids = SKILL_ORDER.filter(id => Object.hasOwn(level.skills, id)), bar = $('skills'), skills = new Map();
+    bar.replaceChildren(...ids.map((id, i) => {
+      const count = el('b', {}, String(level.skills[id]));
+      const button = el('button', { id: `skill-${id}`, class: 'tool tool--skill', type: 'button', 'aria-pressed': 'false',
+        'aria-label': `${SKILLS[id].label}, tecla ${i + 1}` },
+        el('span', { class: 'tool__icon', 'aria-hidden': 'true' }, SKILL_UI[id].icon),
+        el('span', { class: 'tool__copy' }, el('strong', {}, SKILLS[id].label.toUpperCase()), el('small', {}, 'HABILIDAD ', el('kbd', {}, String(i + 1)))),
+        count);
+      button.addEventListener('click', () => this.selectSkill(id));
+      skills.set(id, { button, count });
+      return button;
+    }));
+    bar.classList.toggle('skill-bar--dense', ids.length > 3);
+    this.skillIds = ids; this.hud.setSkills(skills);
+    this.selectSkill(ids.includes(this.skill) ? this.skill : ids[0], { quiet: true });
+  }
+  selectSkill(id, { quiet = false } = {}) {
+    if (!id) return;
+    this.skill = id;
+    for (const other of this.skillIds) $(`skill-${other}`).setAttribute('aria-pressed', String(other === id));
+    if (quiet || this.state !== 'playing') return;
+    this.hint(SKILL_UI[id].select); this.announce(`${SKILLS[id].label} seleccionado.`);
+    this.canvas.focus({ preventScroll: true });
   }
   start(level = this.level) {
     if (!this.unlocked(level)) return;
@@ -59,8 +87,8 @@ export class GameApp {
     // Frame the hatch and the ground ahead of it, where the first decision happens.
     const hatch = level.hatches?.[0] ?? level.spawn; // multi-hatch stages list them in `hatches`
     this.surface.centerOn(hatch.x + 40, false);
-    this.hint(`${SKILLS[this.skill].label} está seleccionado. Pulsa un lemming cuando llegue a la plataforma.${this.surface.scrolling ? ' Desliza para mover la vista.' : ''}`);
-    this.announce(`Etapa ${level.number}, ${level.name}. Rescata al menos ${level.required}. Selecciona con las flechas y pulsa Enter para cavar.`);
+    this.hint(`${level.brief ?? ''} ${SKILLS[this.skill].label} está seleccionado.${this.surface.scrolling ? ' Desliza para mover la vista.' : ''}`.trim());
+    this.announce(`Etapa ${level.number}, ${level.name}. Rescata al menos ${level.required}. Elige habilidad con los números, lemming con las flechas y asigna con Enter.`);
     this.canvas.focus({ preventScroll: true });
   }
   menu() {
@@ -160,25 +188,25 @@ export class GameApp {
   // ── Commands ───────────────────────────────────────────────────────────────
   assign(id) {
     if (this.state !== 'playing') return;
-    const label = SKILLS[this.skill].label;
-    // Touching a lemming that is already working stops it and refunds the use.
-    if (this.world.cancel(id)) {
-      this.hint(`Lemming ${id} deja de cavar y sigue caminando. Recuperas el uso.`);
-      this.announce(`Lemming ${id} deja de cavar. Usos de ${label}: ${this.world.inventory[this.skill]}.`);
+    const skill = this.skill, label = SKILLS[skill].label, ui = SKILL_UI[skill];
+    // Touching a lemming busy with the selected skill stops it and refunds the use.
+    const busy = SKILL_OF_STATE[this.world.lemmings.find(l => l.id === id)?.state];
+    if (busy?.id === skill && this.world.cancel(id)) {
+      this.hint(`Lemming ${id} deja de ${label.toLowerCase()} y sigue caminando. Recuperas el uso.`);
+      this.announce(`Lemming ${id} se detiene. Usos de ${label}: ${this.world.inventory[skill]}.`);
       this.hud.tick(this.world, 0, true); this.dirty = true;
       return;
     }
-    if (this.world.assign(id, this.skill)) {
+    if (this.world.assign(id, skill)) {
       const x = this.world.lemmings.find(l => l.id === id).x;
-      const crew = this.world.lemmings.filter(l => l.state === 'digging' && l.x === x).length;
+      const crew = skill === 'dig' ? this.world.lemmings.filter(l => l.state === 'digging' && l.x === x).length : 1;
       this.hint(crew > 1 ? `¡Cuadrilla de ${crew}! El hoyo baja ${crew} veces más rápido.`
-        : 'Cavando. Es trabajo lento: suma a los que caigan al hoyo para avanzar más rápido.');
-      this.announce(crew > 1 ? `Lemming ${id} se une. Cuadrilla de ${crew}.` : `Lemming ${id}: ${label.toLowerCase()}.`);
-    } else if (!(this.world.inventory[this.skill] > 0)) {
+        : skill === 'dig' ? 'Cavando. Es trabajo lento: suma a los que caigan al hoyo para avanzar más rápido.' : ui.done(id));
+      this.announce(crew > 1 ? `Lemming ${id} se une. Cuadrilla de ${crew}.` : ui.done(id));
+    } else if (!(this.world.inventory[skill] > 0)) {
       this.hint(`No quedan usos de ${label}.`); this.announce(`No quedan usos de ${label}.`);
     } else {
-      this.hint(`Solo pueden ${label.toLowerCase()} los lemmings que caminan sobre tierra firme.`);
-      this.announce(`Espera a que el lemming esté caminando para asignarle ${label}.`);
+      this.hint(ui.invalid); this.announce(ui.invalid);
     }
     this.hud.tick(this.world, 0, true); this.dirty = true;
   }
@@ -262,7 +290,10 @@ export class GameApp {
       }
       if (this.state !== 'playing') return;
       if (code === 'Escape' || code === 'KeyP') { event.preventDefault(); this.pause(); }
-      else if (code === 'KeyD') { event.preventDefault(); $('dig').click(); }
+      else if (code === 'KeyD' && this.skillIds.includes('dig')) { event.preventDefault(); this.selectSkill('dig'); }
+      else if (/^(Digit|Numpad)[1-8]$/.test(code) && this.skillIds[Number(code.at(-1)) - 1]) {
+        event.preventDefault(); this.selectSkill(this.skillIds[Number(code.at(-1)) - 1]);
+      }
       else if (code === 'Minus' || code === 'NumpadSubtract') { event.preventDefault(); this.changeRate(-5); }
       else if (code === 'Equal' || code === 'NumpadAdd') { event.preventDefault(); this.changeRate(5); }
     });
@@ -287,11 +318,6 @@ export class GameApp {
     on('slower', () => this.changeRate(-5));
     on('faster', () => this.changeRate(5));
     on('speed', () => { if (this.state === 'playing') this.setSpeed(this.speed === 1 ? 3 : 1); });
-    on('dig', () => {
-      if (this.state !== 'playing') return;
-      this.skill = 'dig';
-      this.hint('Cavar seleccionado. Ahora pulsa un lemming sobre la plataforma.'); canvas.focus({ preventScroll: true });
-    });
     on('sound', () => this.toggleSound());
     on('sound-menu', () => this.toggleSound());
   }

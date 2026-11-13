@@ -73,7 +73,9 @@ canvas:focus-visible{outline:1px solid rgba(var(--theme-rgb),.35);outline-offset
   background:linear-gradient(100deg,rgba(var(--theme-rgb),.1),rgba(2,7,17,.68));color:#dff5ef;font-weight:700;letter-spacing:.1em;clip-path:var(--clip-sm);
   transition:transform .15s ease,border-color .15s ease,background .15s ease,box-shadow .15s ease}
 .tool:not(:disabled):hover{border-color:var(--theme-line);background:linear-gradient(100deg,rgba(var(--theme-rgb),.26),rgba(2,7,17,.8))}
-.tool--skill{min-width:170px;text-align:left}
+.skill-bar{display:flex;gap:8px;min-width:0;overflow-x:auto;scrollbar-width:none}.skill-bar::-webkit-scrollbar{display:none}
+.tool--skill{min-width:170px;text-align:left;flex:none}
+.skill-bar--dense .tool--skill{min-width:0;gap:7px;padding:6px 10px}.skill-bar--dense .tool__copy small{display:none}.skill-bar--dense .tool__copy strong{font-size:.66rem}
 .tool--skill[aria-pressed=true]{border-color:var(--theme-line);background:linear-gradient(100deg,rgba(var(--theme-rgb),.4),rgba(var(--theme-rgb),.12));box-shadow:-4px 0 0 var(--theme-line),0 0 22px rgba(var(--theme-rgb),.25)}
 .tool__icon{font-size:1.5rem;color:var(--theme-line);text-shadow:0 0 12px var(--theme-glow)}
 .tool__copy strong{display:block;font-size:.78rem;color:var(--theme-soft)}.tool__copy small{display:block;margin-top:2px;color:var(--text-muted);font-size:.56rem}

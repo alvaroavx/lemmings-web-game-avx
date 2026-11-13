@@ -1,5 +1,27 @@
 # Validación local
 
+## 2026-11-13 — iteración 8 (arquitectura de etapas y etapas 2–10)
+
+**Pruebas (`npm test`, 62 casos):**
+- Las 10 etapas compilan sin errores de autoría. En cada una, la prueba gana, el registro de comandos reproduce la partida idéntica y, sin cada habilidad que usa, se salva menos del objetivo.
+- El compilador rechaza: cerradura sin llave, llave que no abre la pieza, perforar acero, inventario menor que el que pide la prueba y pieza desconocida.
+- Cada habilidad tiene su prueba: el paracaídas sobrevive donde un caminante muere; el escalador trepa y suelta bajo un saliente; los bloqueadores sostienen a la colonia y no se apilan; la etapa se resuelve si solo quedan bloqueadores; el constructor hace 12 peldaños y nadie lo adelanta; la perforación se detiene y gira ante el acero; Perforar sin tierra delante no gasta; el minero baja en diagonal; el acero detiene a Cavar; la bomba hace un cráter solo en tierra; el agua ahoga; dos compuertas se alternan; bloquear no se cancela.
+
+**Navegador (Chrome sin interfaz, por el protocolo de depuración, sobre la interfaz de la iteración 7):**
+- Un script detecta a los lemmings por los píxeles del lienzo y los pulsa con eventos de ratón reales, siguiendo los disparadores de la prueba de cada etapa. Juega desde el menú hasta la pantalla de resultado.
+  - Etapas 1–9: todas superadas (10/10, 10/10, 9/10, 10/10, 10/10, 9/10, 10/10, 10/10 y 20/20).
+  - Etapa 10: 11/12, porque al script se le escapó un paracaídas.
+  - Sin errores de consola.
+- Campaña lineal: con el almacenamiento vacío solo está abierta la etapa 1, y el resto muestra el candado.
+- Teclas: `3` selecciona la tercera habilidad y `D`, Cavar.
+- Tocar de nuevo con Cavar a un excavador lo detiene y devuelve el uso (9 → 10).
+- Capturas revisadas: paracaídas abiertos, acero remachado, agua, escalera en construcción y barra densa con las habilidades agotadas en gris.
+
+**No verificado:**
+- Juego de una persona en un teléfono real.
+- La dificultad percibida: los objetivos (`required`) dejan margen sobre el jugador perfecto, pero hay que jugarlas.
+- Las nuevas señales de sonido, que no se escucharon.
+
 ## 2026-11-13 — iteración 7 (música original)
 
 Se verificó en Chrome sin interfaz instrumentando Web Audio (se contaron las fuentes de ruido, es decir caja y charles, y las notas de pulso de la melodía):

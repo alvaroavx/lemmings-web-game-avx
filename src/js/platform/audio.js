@@ -8,6 +8,15 @@ const CUES = Object.freeze({
   saved: { wave: 'triangle', notes: [523, 659, 784], length: .14 },
   lost: { wave: 'square', notes: [294, 220], length: .14, level: .45 },
   victory: { wave: 'triangle', notes: [523, 659, 784, 1047], length: .18 },
+  float: { wave: 'triangle', notes: [392, 523], length: .1 },
+  climb: { wave: 'triangle', notes: [330, 392, 494], length: .08 },
+  block: { wave: 'square', notes: [262, 262], length: .08, level: .45 },
+  build: { wave: 'triangle', notes: [294, 370], length: .09 },
+  bash: { wave: 'square', notes: [220, 220], length: .07, level: .45 },
+  mine: { wave: 'square', notes: [247, 208], length: .08, level: .45 },
+  bomb: { wave: 'square', notes: [880, 880], length: .06, level: .4 },
+  explode: { wave: 'sawtooth', notes: [220, 208, 202], length: .16, level: .5 },
+  shrug: { wave: 'triangle', notes: [247], length: .1 },
   defeat: { wave: 'triangle', notes: [392, 330, 262], length: .2 },
 });
 const MASTER = .5, PEAK = .4, MAX_VOICES = 24;

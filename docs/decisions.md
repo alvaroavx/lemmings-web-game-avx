@@ -9,6 +9,8 @@
 | D-05 | Etapa 1 amurallada y con plataforma más gruesa | 2026-11-13 | Vigente |
 | D-06 | Menú principal y juego a pantalla completa, como Alvaroids | 2026-11-13 | Vigente |
 | D-07 | Campaña lineal, detener excavadores con devolución y música propia | 2026-11-13 | Vigente |
+| D-08 | Etapas como rutas con cerraduras, llaves y prueba ejecutable | 2026-11-13 | Vigente |
+| D-09 | Reglas propias que se apartan del clásico | 2026-11-13 | Vigente |
 
 ## D-01: Entregar menú y etapa 1 en el universo Vector Field
 
@@ -137,3 +139,33 @@
 **Música:** se pidió una réplica de la música de la etapa 1 de Lemmings (1991). No se replica, porque es una obra con derechos de terceros y el proyecto mantiene sonidos propios (AGENTS.md). Álvaro eligió la alternativa: música original con ánimo juguetón, explorador y de marcha. Se compuso «Marcha de la colonia» (ver arquitectura) y se agregó una pantalla de CONFIGURACIÓN con el volumen de música.
 
 **Coordinación:** `world.cancel` toca `world.js`, que está en el área de la rama `feat/etapas`. Se avisó a esa sesión con el cambio exacto para que lo concilie.
+
+## D-08: Etapas como rutas con cerraduras, llaves y prueba ejecutable
+
+**Fecha:** 2026-11-13. **Decidió:** Álvaro pidió una arquitectura para crear las etapas 2–10, cada una con algo nuevo, que no fuera una cadena de condicionales y que preparase un futuro generador aleatorio. El diseño concreto se delegó. **Estado:** vigente.
+
+**Alternativas descartadas:**
+- Etapas como rectángulos absolutos, cada una con pruebas escritas a mano: no escala a un generador y no garantiza que la habilidad enseñada sea necesaria.
+- Editor visual primero: añade interfaz sin resolver la verificación.
+- Generador procedural con ruido o baldosas: produce terrenos, no puzles. Habría que verificarlos igual.
+
+**Decisión:** ver [stages.md](stages.md). Una tortuga recorre la ruta y pone piezas. Cada pieza declara la cerradura que crea y las llaves que la abren, y cada llave emite los disparadores de su solución. Un jugador determinista ejecuta esa prueba con los comandos normales, y las pruebas exigen victoria, repetición idéntica y necesidad de cada habilidad. World pasa a despachar habilidades por estado y por hooks de rasgos, sin nombrarlas. Terrain gana materiales. Los niveles admiten varias entradas, salidas y zonas de agua.
+
+**Consecuencias asumidas:**
+- Cambian las reglas: los registros de repetición anteriores ya no son válidos.
+- La prueba demuestra que *existe* una solución con esas llaves y que ninguna sobra entre ellas. No demuestra que no haya otras soluciones.
+- `required` se elige a mano, con margen sobre el jugador perfecto.
+
+**Condiciones de revisión:** al empezar el generador (semillas, presupuesto, métricas de dificultad), o si una etapa necesita algo que el vocabulario no expresa y `shape` no basta.
+
+## D-09: Reglas propias que se apartan del clásico
+
+**Fecha:** 2026-11-13. **Decidido por delegación** al construir las etapas. **Estado:** vigente.
+
+- **Nadie adelanta a un constructor.** En el clásico, los caminantes pasan al constructor y caen del puente inacabado o quedan atrapados bajo la escalera. Al probar la etapa 7 apareció esa trampa sin salida. Ahora quien construye hace girar a los caminantes, igual que un bloqueador.
+- **Detener es por habilidad.** Se pueden detener cavar, perforar, minar y construir (D-07). Bloquear no, porque convertiría en trivial la etapa 6.
+- **Las asignaciones inútiles se rechazan.** Perforar exige tierra delante. Minar y Cavar exigen tierra bajo los pies, y en ningún caso sirve el acero. El inventario solo baja si la habilidad puede actuar (regla del laboratorio).
+- **Solo quedan bloqueadores, la etapa termina.** Sin compuerta ni caminantes, los bloqueadores no pueden cambiar nada: se cuentan como perdidos al instante, sin esperar al reloj ni pedir una detonación general.
+- **Constructor:** 12 ladrillos de 8×2, que avanzan 4 px y suben 2 cada 0,45 s (48 px de alcance, 24 de altura). **Bomba:** mecha de 4 s y cráter de radio 14, que solo quita tierra.
+
+**Condiciones de revisión:** si las etapas se vuelven demasiado fáciles porque el constructor protege a la colonia, devolverle la regla clásica y exigir bloqueadores (la receta `block+build+bomb` ya se escribió una vez y se puede recuperar).
