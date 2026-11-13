@@ -93,7 +93,7 @@ export const CATALOG = [
   },
   {
     id: 'stairway', music: 'escalera', number: 7, name: 'Escalera', width: 800, height: 360,
-    total: 10, required: 8, seconds: 300, skills: { build: 4 }, teaches: ['build'],
+    total: 10, required: 7, seconds: 300, skills: { build: 4 }, teaches: ['build'],
     brief: 'Dos escalones demasiado altos. Construye peldaños.',
     hint: 'El constructor pone 12 ladrillos. Empieza a unos 45 px del escalón; para uno doble, encadena dos constructores.',
     origin: { x: 70, y: 270 },

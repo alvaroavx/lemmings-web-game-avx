@@ -39,13 +39,14 @@ export class World {
     if (this.result || !Number.isFinite(rate)) return false;
     const next = Math.min(99, Math.max(50, Math.round(rate)));
     if (next === this.rate) return false;
+    this.#forecast = null;
     this.rate = next; this.log.push({ tick: this.tick, type: 'rate', rate: next });
     return true;
   }
   assign(id, skillId) {
     const skill = Object.hasOwn(SKILLS, skillId) ? SKILLS[skillId] : null, l = this.lemmings.find(item => item.id === id);
     if (this.result || !skill || !l || !alive(l) || !(this.inventory[skillId] > 0) || !skill.canAssign(this, l)) return false;
-    skill.begin(this, l); this.inventory[skillId]--;
+    skill.begin(this, l); this.inventory[skillId]--; this.#forecast = null;
     this.log.push({ tick: this.tick, type: 'assign', id, skill: skillId });
     this.emit({ type: skillId, id, x: l.x, y: l.y });
     return true;
@@ -55,7 +56,7 @@ export class World {
   cancel(id) {
     const l = this.lemmings.find(item => item.id === id), skill = l && SKILL_OF_STATE[l.state];
     if (this.result || !skill?.cancellable) return false;
-    l.state = 'walking'; l.timer = 0; l.work = 0;
+    l.state = 'walking'; l.timer = 0; l.work = 0; this.#forecast = null;
     this.inventory[skill.id] = (this.inventory[skill.id] ?? 0) + 1;
     this.log.push({ tick: this.tick, type: 'cancel', id });
     this.emit({ type: 'cancel', id, skill: skill.id, x: l.x, y: l.y });
@@ -117,7 +118,8 @@ export class World {
     this.blasts = this.blasts.filter(b => this.time - b.time < RULES.blastLife);
     // Once the hatch is empty, a crew made only of blockers can never change again.
     if (this.remaining === 0 && this.lemmings.some(l => l.state === 'blocking')
-      && this.lemmings.every(l => !alive(l) || l.state === 'blocking')) {
+      && this.lemmings.every(l => !alive(l) || (l.state === 'blocking' && !l.traits.bomb))
+      && !(this.inventory.bomb > 0)) {
       for (const l of this.lemmings) if (alive(l)) this.settle(l, 'lost', 'stranded');
     }
     if (!this.doom && this.saved + this.lost < level.total) {
@@ -125,11 +127,12 @@ export class World {
       if (reason) { this.doom = { at: this.time, reason }; this.emit({ type: 'doom', reason }); }
     }
     const timeout = this.time >= level.seconds, doomed = this.doomLeft === 0;
-    if (timeout || doomed) {
-      for (const l of this.lemmings) if (alive(l)) this.settle(l, 'lost', doomed ? 'doom' : 'lost');
+    const rescued = level.required > 0 && this.saved >= level.required && this.#forecast === this.saved;
+    if (timeout || doomed || rescued) {
+      for (const l of this.lemmings) if (alive(l)) this.settle(l, 'lost', rescued ? 'stranded' : doomed ? 'doom' : 'lost');
       this.lost += this.remaining; this.released = level.total;
     }
-    if (timeout || doomed || this.saved + this.lost === level.total) {
+    if (timeout || doomed || rescued || this.saved + this.lost === level.total) {
       this.result = this.saved >= level.required ? 'won' : 'lost';
       this.emit({ type: this.result === 'won' ? 'victory' : 'defeat' });
     }
@@ -146,7 +149,10 @@ export class World {
     const { level } = this;
     if (this.saved + this.activeCount + this.remaining < level.required) return 'count';
     if (!this.#lookahead || this.#forecast !== null || this.remaining > 0) return null;
-    if (Object.values(this.inventory).some(n => n > 0)) return null;
+    // Before the goal, unused skills may still change the outcome. After it,
+    // forecast the remaining rescues so a trapped tail cannot hold victory open.
+    if ((level.required === 0 || this.saved < level.required)
+      && Object.values(this.inventory).some(n => n > 0)) return null;
     if (this.lemmings.some(l => alive(l) && SKILL_OF_STATE[l.state]?.cancellable)) return null;
     this.#forecast = this.copy().finish().saved;
     return this.#forecast < level.required ? 'fate' : null;

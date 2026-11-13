@@ -117,3 +117,16 @@ test('water drowns and two hatches alternate', () => {
   assert.ok(w.lemmings.some(l => l.state === 'lost'), 'someone met the water');
 });
 test('physics constants are shared, not duplicated', () => { assert.equal(RULES.safeFall, 125); });
+
+test('left-facing stairs also let a walker escape from underneath', () => {
+  const w = new World(arena({ skills: { build: 1 }, total: 3 }));
+  const builder = walker(w, 200, 80, -1);
+  assert.ok(w.assign(builder.id, 'build'));
+  while (builder.state === 'building') w.update(1 / 60);
+  const pocket = walker(w, 145, 80, 1), uphill = walker(w, 250, 80, -1);
+  let top = 80;
+  for (let i = 0; i < 5 * 60; i++) { w.update(1 / 60); top = Math.min(top, uphill.y); }
+  assert.ok(pocket.x > 200, `escapes to the right: ${pocket.x}`);
+  assert.equal(pocket.y, 80);
+  assert.ok(top <= 58, `can still climb left: ${top}`);
+});

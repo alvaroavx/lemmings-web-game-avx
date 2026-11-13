@@ -202,3 +202,48 @@ test('doomed stages replay exactly', () => {
   const w = run(new World(stuck()), 30);
   assert.equal(JSON.stringify(replay(w.level, w.log)), JSON.stringify(w));
 });
+
+test('stage 7 resolves seven rescued and three trapped without waiting five minutes', () => {
+  const w = new World(LEVELS.find(l => l.number === 7));
+  assert.equal(w.level.required, 7);
+  for (let i = 0; i < 10; i++) {
+    w.spawn();
+    const l = w.lemmings.at(-1);
+    if (i < 7) w.settle(l, 'saved');
+    else Object.assign(l, { state: 'walking', x: 120 + i, y: 270 });
+  }
+  // Even the spare build does not keep a fulfilled objective open forever.
+  w.inventory.build = 1;
+  w.update(1 / 60);
+  assert.equal(w.result, 'won'); assert.equal(w.saved, 7); assert.equal(w.lost, 3);
+  assert.equal(w.activeCount, 0); assert.equal(w.remaining, 0);
+  assert.equal(w.drainEvents().filter(e => e.type === 'victory').length, 1);
+  const ended = JSON.stringify(w); w.update(1 / 60);
+  assert.equal(JSON.stringify(w), ended);
+});
+
+test('stage 7 with ten trapped and no skills ends in defeat promptly', () => {
+  const w = run(new World({ ...LEVELS.find(l => l.number === 7), skills: { build: 0 } }), 30);
+  assert.equal(w.result, 'lost'); assert.equal(w.saved, 0); assert.equal(w.lost, 10);
+  assert.equal(w.doom.reason, 'fate'); assert.ok(w.time < 25);
+});
+
+test('reaching the goal waits for additional lemmings that can still reach the exit', () => {
+  const w = new World(arena([], { total: 3, required: 1, skills: { dig: 1 }, rate: 99 }));
+  while (w.saved === 0) w.update(1 / 60);
+  assert.equal(w.result, null);
+  run(w, 30);
+  assert.equal(w.result, 'won'); assert.equal(w.saved, 3);
+});
+
+test('a blocker with a burning fuse is simulated until the explosion', () => {
+  const w = new World(stuck({ total: 1, required: 1, skills: { block: 1, bomb: 1 } }));
+  w.spawn(); Object.assign(w.lemmings[0], { state: 'walking', y: 50 });
+  assert.ok(w.assign(1, 'block')); w.update(1 / 60);
+  assert.equal(w.result, null, 'a bomb is still available');
+  assert.ok(w.assign(1, 'bomb')); w.update(1 / 60);
+  assert.equal(w.lemmings[0].state, 'blocking', 'the fuse has not finished');
+  for (let i = 0; i < 600 && !w.result; i++) w.update(1 / 60);
+  assert.ok(w.events.some(e => e.type === 'explode'));
+  assert.equal(w.result, 'lost');
+});

@@ -66,14 +66,14 @@ Reglas de un caminante (`RULES` en `rules.js`):
 - Se pierde al salir del mundo o al entrar en agua. Se salva al caminar dentro del rectángulo de cualquier salida.
 - Da la vuelta ante un lemming que bloquea o construye (`turnsWalkers`), a ≤ 6 px por delante.
 
-**Materiales.** Cada celda vale 0 (vacío), 1 (tierra) o 2 (acero). `solid` es «distinto de 0». Las habilidades usan `carve`, que solo quita tierra e informa del acero encontrado para detenerse; las explosiones usan `carveDisc`.
+**Materiales.** Cada celda vale 0 (vacío), 1 (tierra), 2 (acero), 3 (ladrillo hacia la derecha) o 4 (ladrillo hacia la izquierda). Los ladrillos sostienen las caídas y permiten caminar desde atrás atravesándolos; desde su inicio siguen formando escalones. `solid` es «distinto de 0». Las habilidades usan `carve`, que solo quita tierra e informa del acero encontrado para detenerse; las explosiones usan `carveDisc`.
 
 **Habilidades.** `skills.js` define tres tipos con un solo contrato (`canAssign`, `begin`):
 - *job* (`dig`, `bash`, `mine`, `build`, `block`): cambian el estado; `states` asocia cada estado a su actualizador y World despacha con `SKILL_BY_STATE`.
 - *trait* (`climb`, `float`): permanentes en `lemming.traits`; reaccionan con `hooks.wall` (escalar en vez de girar), `hooks.fallCap` y `hooks.survives` (caer lento y sin morir).
 - *fuse* (`bomb`): un temporizador en `traits` que avanza con `hooks.tick` y llama a `world.explode`.
 
-World no nombra ninguna habilidad: despacha estados y pregunta a los hooks de los rasgos del lemming, en el orden en que se asignaron. Cuando no quedan por salir y solo quedan bloqueadores, la etapa se resuelve: no podrían cambiar nada.
+World no nombra ninguna habilidad: despacha estados y pregunta a los hooks de los rasgos del lemming, en el orden en que se asignaron. Cuando no quedan por salir y solo quedan bloqueadores, la etapa se resuelve salvo que haya bombas disponibles o mechas activas.
 
 **Etapas.** Se escriben como rutas de piezas con cerraduras y llaves, y cada una trae su prueba ejecutable. Ver [stages.md](stages.md).
 
@@ -145,3 +145,9 @@ La primera iteración partió de revisar `asteroids-web-game-avx` como fuente de
 - Arrastrar con el ratón para desplazar, si alguien juega en una ventana de escritorio estrecha (hoy funcionan la rueda, el teclado y los indicadores).
 - El terreno visual no equivale a una experiencia no visual completa: el teclado permite jugar, pero no describe el mapa.
 - Compartir `engine/` con otros juegos solo cuando haya código estable realmente común. Por ahora los repositorios siguen siendo independientes.
+
+## Cierre sin espera innecesaria
+
+`result` sigue siendo la bandera terminal (`null`, `won`, `lost`). `doom` anuncia una derrota inevitable y `doomLeft` cuenta cinco segundos de simulación, respetando la pausa. Sin habilidades ni trabajos cancelables, una copia determinista calcula el rescate final. Tras alcanzar el objetivo también se consulta esa copia: cuando ya entraron todos los que pueden llegar sin nuevos comandos, se resuelve la victoria y los restantes cuentan como no rescatados. No corta una construcción en curso ni interrumpe a quienes aún van hacia la puerta.
+
+La previsión se reutiliza y se invalida al asignar, cancelar o cambiar el ritmo. La copia no genera nuevas previsiones ni modifica el mundo visible. Se simula hasta el límite temporal del nivel; es trabajo síncrono y su coste aumenta con la duración y la población, por lo que no debe extrapolarse sin medir a campañas mucho mayores. Antes de alcanzar el objetivo, conservar habilidades impide declarar una derrota por encierro: no se intenta demostrar que toda secuencia posible de acciones fallaría.
