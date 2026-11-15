@@ -11,6 +11,8 @@
 | D-07 | Campaña lineal, detener excavadores con devolución y música propia | 2026-11-13 | Vigente |
 | D-08 | Etapas como rutas con cerraduras, llaves y prueba ejecutable | 2026-11-13 | Vigente |
 | D-09 | Reglas propias que se apartan del clásico | 2026-11-13 | Vigente |
+| D-10 | Separar tutorial y expediciones aleatorias normales | 2026-11-14 | Ajustada por D-11 |
+| D-11 | Mantener Fácil permanente y añadir Normal/Difícil consumibles | 2026-11-14 | Vigente |
 
 ## D-01: Entregar menú y etapa 1 en el universo Vector Field
 
@@ -171,3 +173,29 @@
 - **Constructor:** 12 ladrillos de 8×2, que avanzan 4 px y suben 2 cada 0,45 s (48 px de alcance, 24 de altura). **Bomba:** mecha de 4 s y cráter de radio 14, que solo quita tierra.
 
 **Condiciones de revisión:** si las etapas se vuelven demasiado fáciles porque el constructor protege a la colonia, devolverle la regla clásica y exigir bloqueadores (la receta `block+build+bomb` ya se escribió una vez y se puede recuperar).
+
+## D-10: Separar tutorial y expediciones aleatorias normales
+
+**Fecha:** 2026-11-14. **Decidió:** Álvaro, solicitud directa; detalles de implementación delegados. **Estado:** vigente.
+
+**Contexto:** Las diez etapas existentes enseñan las habilidades. Álvaro pidió reservarlas para Jugar tutorial y ofrecer Jugar con combinaciones aleatorias resolubles, inventario limitado y objetivo de rescate, empezando por dificultad normal. Amplía D-08 y sitúa la progresión de D-07 dentro del tutorial.
+
+**Decisión:** separar ambos accesos y generar rutas normales con tres problemas, diez lemmings y objetivo de siete, usando piezas y pruebas ejecutables. La solución se verifica antes de ofrecer el escenario. Los parámetros concretos de normal son una primera calibración técnica, pendiente de ajuste con juego humano.
+
+**Alternativas descartadas:** terreno aleatorio sin solución probada, porque puede ser imposible; elegir una de las diez lecciones, porque no combina problemas; introducir fácil y difícil simultáneamente, porque el encargo prioriza normal.
+
+**Consecuencias asumidas:** generación en worker con intentos y tiempo acotados; variedad limitada al vocabulario probado; tres problemas pueden requerir muchas asignaciones individuales. La prueba de margen no sustituye la evaluación humana.
+
+**Condiciones de revisión:** si el juego humano muestra precisión excesiva, monotonía o dificultad desigual, ajustar geometrías y presupuestos antes de introducir fácil y difícil.
+
+## D-11: Mantener Fácil permanente y añadir Normal/Difícil consumibles
+
+**Fecha:** 2026-11-14. **Decidió:** Álvaro tras jugar una ruta con escalada que permitía evitar Cavar. **Estado:** vigente; ajusta la calibración de D-10.
+
+**Contexto y decisión:** aceptar esas soluciones alternativas y conservar el modo anterior como Fácil. Normal tendrá 3–5 problemas y habilidades de un uso; Difícil tendrá más de cinco y tres pisos, con una solución posible. Por delegación se implementan 7–8 problemas, objetivo 9/10 y dos puentes en Difícil; 8/10 en Normal. Se desactiva la devolución al detener trabajos en ambos modos para impedir reutilizar indefinidamente el inventario.
+
+**Alternativas descartadas:** eliminar habilidades permanentes del tutorial/Fácil contradice la petición; exigir posiciones de un único píxel hace depender la dificultad de la interfaz; afirmar unicidad de solución excede lo que demuestran las pruebas.
+
+**Consecuencias:** la prueba de necesidad se hace por obstáculo, incluyendo los repetidos. Los rasgos se consumen por episodio de escalada o caída, no por fotograma ni por lemming para siempre. Se debe volver a asignar y gastar otro uso.
+
+**Condiciones de revisión:** ajustar márgenes, número de asignaciones, tiempos y objetivo con partidas humanas; no considerar la solución automática una prueba de que la dificultad percibida sea adecuada.

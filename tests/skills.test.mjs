@@ -130,3 +130,45 @@ test('left-facing stairs also let a walker escape from underneath', () => {
   assert.equal(pocket.y, 80);
   assert.ok(top <= 58, `can still climb left: ${top}`);
 });
+
+for (const singleUseSkills of [false, true]) {
+  test(`climbing two walls consumes one assignment per wall only when singleUse=${singleUseSkills}`, () => {
+    const w = new World({ ...arena({ skills: { climb: 2 }, total: 2, terrain: [
+      { x: 80, y: 40, width: 12, height: 40 }, { x: 170, y: 40, width: 12, height: 40 },
+    ] }), singleUseSkills });
+    const l = walker(w, 50);
+    assert.ok(w.assign(l.id, 'climb'));
+    for (let tick = 0; tick < 1200 && l.x < 130; tick++) w.update(1 / 60);
+    if (singleUseSkills) {
+      assert.equal(l.traits.climb, undefined); assert.ok(l.x < 170);
+      w.meetWall(l); assert.equal(l.state, 'walking'); assert.equal(l.direction, -1);
+      l.direction = 1; assert.ok(w.assign(l.id, 'climb'));
+    }
+    for (let tick = 0; tick < 1200 && l.x <= 182; tick++) w.update(1 / 60);
+    assert.ok(l.x > 182, `both walls crossed: ${l.x}`);
+    assert.equal(w.inventory.climb, singleUseSkills ? 0 : 1);
+  });
+  test(`parachute protects one fall then requires another assignment when singleUse=${singleUseSkills}`, () => {
+    const w = new World({ ...arena({ skills: { float: 2 }, total: 2, terrain: [] }), singleUseSkills });
+    w.terrain.clear(0, 0, 300, 300); w.terrain.fill(0, 260, 300, 20);
+    const l = walker(w, 100, 40); w.startFall(l); assert.ok(w.assign(l.id, 'float'));
+    run(w, 8); assert.equal(l.state, 'walking');
+    assert.equal(!!l.traits.float, !singleUseSkills);
+    l.y = 40; w.startFall(l); run(w, 8);
+    assert.equal(l.state === 'lost', singleUseSkills);
+  });
+}
+test('single-use parachute survives small steps and can be reassigned after landing', () => {
+  const w = new World({ ...arena({ skills: { float: 2 }, total: 2 }), singleUseSkills: true });
+  const l = walker(w, 100, 70); w.startFall(l); w.assign(l.id, 'float'); run(w, .5);
+  assert.equal(l.traits.float, true, 'does not waste a parachute on a small step');
+  w.terrain.clear(0, 0, 300, 300); w.terrain.fill(0, 260, 300, 20);
+  l.x = 100; l.y = 40; w.startFall(l); run(w, 8);
+  assert.equal(l.traits.float, undefined);
+  assert.ok(w.assign(l.id, 'float')); assert.equal(w.inventory.float, 0);
+});
+test('stopping a job in normal or hard does not refund its spent assignment', () => {
+  const w = new World({ ...arena({ skills: { build: 1 }, total: 2 }), singleUseSkills: true });
+  const l = walker(w, 100); assert.ok(w.assign(l.id, 'build')); run(w, .5);
+  assert.ok(w.cancel(l.id)); assert.equal(w.inventory.build, 0); assert.equal(w.assign(l.id, 'build'), false);
+});

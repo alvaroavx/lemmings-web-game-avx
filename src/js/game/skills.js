@@ -4,7 +4,7 @@ import { brickFor, diggable } from '../engine/terrain.js';
 /**
  * Skill table. Three kinds, one contract:
  *  - job:   changes the lemming's state; `states` maps each state it drives to an updater.
- *  - trait: permanent ability stored in `lemming.traits`; reacts through `hooks`.
+ *  - trait: ability stored in `lemming.traits`; reacts through `hooks`.
  *  - fuse:  a timer stored in `lemming.traits`; ticks through `hooks.tick`.
  * World consumes inventory only after `canAssign` approves, then calls `begin`.
  * `cancellable` jobs can be undone with World.cancel: the lemming walks on and
@@ -42,7 +42,7 @@ const stop = (world, l, turn = false) => {
 };
 
 export const SKILLS = Object.freeze({
-  /** Floater: permanent. Falls slowly after the first few pixels and never dies of height. */
+  /** Floater: permanent in tutorial/easy, one deployed fall otherwise. Falls slowly after the first few pixels and never dies of height. */
   float: Object.freeze({
     id: 'float', kind: 'trait', label: 'Paracaídas', role: 'descend-high', after: 16, speed: 32,
     canAssign: (world, l) => !l.traits.float,
@@ -50,15 +50,21 @@ export const SKILLS = Object.freeze({
     hooks: {
       fallCap(world, l) { return l.y - l.fallStart > SKILLS.float.after ? SKILLS.float.speed : undefined; },
       survives: () => true,
+      landed(world, l) {
+        if (world.level.singleUseSkills && l.y - l.fallStart > SKILLS.float.after) delete l.traits.float;
+      },
     },
   }),
-  /** Climber: permanent. Scales walls instead of turning; lets go under an overhang. */
+  /** Climber: permanent in tutorial/easy, one ascent otherwise. Scales walls instead of turning; lets go under an overhang. */
   climb: Object.freeze({
     id: 'climb', kind: 'trait', label: 'Escalar', role: 'scale', speed: 14,
-    canAssign: (world, l) => !l.traits.climb,
+    canAssign: (world, l) => !l.traits.climb && (!world.level.singleUseSkills || l.state !== 'climbing'),
     begin(world, l) { l.traits.climb = true; },
     hooks: {
-      wall(world, l) { l.state = 'climbing'; l.vy = 0; return true; },
+      wall(world, l) {
+        if (world.level.singleUseSkills) delete l.traits.climb;
+        l.state = 'climbing'; l.vy = 0; return true;
+      },
     },
     states: {
       climbing(world, l, dt) {

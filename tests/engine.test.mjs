@@ -31,7 +31,7 @@ test('simulation and engine modules stay free of browser and nondeterministic AP
   const forbidden = /\b(document|window|localStorage|sessionStorage|requestAnimationFrame|setTimeout|setInterval|Math\.random|Date\.now|performance\.now|AudioContext|fetch)\b/;
   for (const dir of ['engine', 'game']) {
     const path = join(import.meta.dirname, '../src/js', dir);
-    for (const file of readdirSync(path).filter(f => f.endsWith('.js'))) {
+    for (const file of readdirSync(path, { recursive: true }).filter(f => f.endsWith('.js'))) {
       const code = readFileSync(join(path, file), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
       assert.doesNotMatch(code, forbidden, `${dir}/${file}`);
     }

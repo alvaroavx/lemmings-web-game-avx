@@ -52,12 +52,12 @@ export class World {
     return true;
   }
   dig(id) { return this.assign(id, 'dig'); }
-  /** Undoes a cancellable job: the lemming walks on and the use is refunded. */
+  /** Stops a cancellable job; only tutorial/easy refund the use. */
   cancel(id) {
     const l = this.lemmings.find(item => item.id === id), skill = l && SKILL_OF_STATE[l.state];
     if (this.result || !skill?.cancellable) return false;
     l.state = 'walking'; l.timer = 0; l.work = 0; this.#forecast = null;
-    this.inventory[skill.id] = (this.inventory[skill.id] ?? 0) + 1;
+    if (!this.level.singleUseSkills) this.inventory[skill.id] = (this.inventory[skill.id] ?? 0) + 1;
     this.log.push({ tick: this.tick, type: 'cancel', id });
     this.emit({ type: 'cancel', id, skill: skill.id, x: l.x, y: l.y });
     return true;
@@ -227,7 +227,7 @@ export class World {
       if (!this.terrain.solid(l.x, y)) continue;
       l.y = y; l.vy = 0;
       if (l.y - l.fallStart > RULES.safeFall && !this.hook(l, 'survives')) this.settle(l, 'lost', 'fall');
-      else l.state = 'walking';
+      else { this.hook(l, 'landed'); l.state = 'walking'; }
       return;
     }
     l.y = nextY;

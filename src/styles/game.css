@@ -188,3 +188,6 @@ canvas:focus-visible{outline:1px solid rgba(var(--theme-rgb),.35);outline-offset
   .game--playing .hud,.game--playing .toolbar{animation:none}
   .button,.tool{transition:none}.button:hover,.button:focus-visible{transform:none}
 }
+
+.mode-detail{display:block;margin-top:5px;font-size:.65rem;letter-spacing:.08em;color:#adc2cf;font-weight:400}
+#normal-inventory{font-size:.85rem;line-height:1.8}

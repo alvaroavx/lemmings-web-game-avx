@@ -103,3 +103,7 @@ El generador será otro autor que escribe `course`, no un motor nuevo:
 6. **Decisiones, no solo obstáculos.** Una pieza con varias llaves (un muro que se perfora o se escala) da opciones. Ofrecer inventario para las dos y comprobar con `withoutSkill` que cada una sola basta crea etapas con varias soluciones. Comprobar que ninguna basta sola crea etapas que obligan a combinar.
 
 Los pasos 1, 2, 3 y 5 faltan. El 4 ya existe y es el que da la robustez.
+
+## Generador por dificultad
+
+`generateStage(seed, difficulty)` reutiliza `compileStage`, `proofNeeds` y `autoplay`. Ver [arquitectura](architecture.md#generación-por-dificultad) para límites y validaciones, y `tests/generator.test.mjs` para el corpus de semillas, repetición, márgenes, variedad y ciclo del worker. Añadir un módulo exige comprobar que se combina con las otras piezas; la validez geométrica por sí sola no garantiza una solución.

@@ -52,8 +52,11 @@
     <section id="start-screen" class="screen screen--menu" aria-labelledby="game-title">
       <p class="screen__eyebrow">VECTOR FIELD // OPERACIÓN RESCATE</p>
       <h1 id="game-title">LEMMINGS<br><span>AVX</span></h1>
-      <p class="screen__lede">ELIGE UNA ETAPA</p>
-      <div id="stage-list" class="menu-actions mission-picker" role="group" aria-label="Etapas disponibles"></div>
+      <p class="screen__lede">UNA COLONIA. MUCHOS CAMINOS.</p>
+      <div class="menu-actions">
+        <button id="play-normal" class="button button--primary" type="button"><span class="button__signal">›</span><span>JUGAR<small class="mode-detail">ELIGE TU DIFICULTAD</small></span></button>
+        <button id="play-tutorial" class="button button--quiet" type="button"><span class="button__signal">01</span><span>JUGAR TUTORIAL<small class="mode-detail">10 ETAPAS PARA APRENDER</small></span></button>
+      </div>
       <div class="menu-actions menu-actions--settings">
         <button id="help" class="button button--quiet" type="button"><span class="button__signal">?</span>CÓMO JUGAR</button>
         <button id="open-settings" class="button button--quiet" type="button"><span class="button__signal">◇</span>CONFIGURACIÓN</button>
@@ -61,6 +64,52 @@
       <div class="screen__controls" aria-label="Controles">
         <p class="controls--keyboard"><kbd>←</kbd><kbd>→</kbd> elegir · <kbd>ENTER</kbd> asignar · <kbd>1</kbd>–<kbd>8</kbd> habilidad · <kbd>P</kbd> pausa</p>
         <p>Toca un lemming para asignarle la habilidad elegida. En pantallas estrechas, desliza para mover la vista.</p>
+      </div>
+    </section>
+
+    <section id="tutorial-screen" class="screen screen--menu" hidden aria-labelledby="tutorial-title">
+      <p class="screen__eyebrow">APRENDE A RESCATAR</p>
+      <h2 id="tutorial-title">TUTORIAL</h2>
+      <p class="screen__lede">Diez etapas para conocer las habilidades, los materiales y la colonia.</p>
+      <div id="stage-list" class="menu-actions mission-picker" role="group" aria-label="Etapas del tutorial"></div>
+      <div class="menu-actions"><button id="close-tutorial" class="button button--quiet" type="button">‹ MENÚ PRINCIPAL</button></div>
+    </section>
+
+    <section id="difficulty-screen" class="screen screen--menu" hidden aria-labelledby="difficulty-title">
+      <p class="screen__eyebrow">EXPEDICIÓN ALEATORIA</p>
+      <h2 id="difficulty-title">DIFICULTAD</h2>
+      <div class="menu-actions">
+        <button id="choose-easy" class="button button--quiet" type="button"><span>FÁCIL<small class="mode-detail">3 PROBLEMAS · RESCATA 7/10<br>Habilidades permanentes y caminos alternativos.</small></span></button>
+        <button id="choose-normal" class="button button--primary" type="button"><span>NORMAL<small class="mode-detail">3–5 PROBLEMAS · RESCATA 8/10<br>Habilidades de un uso. Sin devoluciones.</small></span></button>
+        <button id="choose-hard" class="button button--quiet" type="button"><span>DIFÍCIL<small class="mode-detail">7–8 PROBLEMAS · RESCATA 9/10<br>Tres pisos. Inventario justo. Cada decisión cuenta.</small></span></button>
+        <button id="close-difficulty" class="button button--quiet" type="button">‹ MENÚ PRINCIPAL</button>
+      </div>
+    </section>
+
+    <section id="generation-screen" class="screen" hidden aria-labelledby="generation-title">
+      <p class="screen__eyebrow">NUEVA EXPEDICIÓN</p>
+      <h2 id="generation-title">PREPARANDO RUTA</h2>
+      <p id="generation-status" class="screen__lede" role="status">Buscando un camino para la colonia…</p>
+      <div class="menu-actions">
+        <button id="retry-generation" class="button button--primary" type="button" hidden>VOLVER A INTENTAR</button>
+        <button id="cancel-generation" class="button button--quiet" type="button">‹ MENÚ PRINCIPAL</button>
+      </div>
+    </section>
+
+    <section id="briefing-screen" class="screen screen--side" hidden aria-labelledby="briefing-title">
+      <div class="side-panel">
+        <p id="briefing-mode" class="screen__eyebrow">EXPEDICIÓN ALEATORIA</p>
+        <h2 id="briefing-title">LA RUTA</h2>
+        <p id="normal-goal" class="screen__lede"></p>
+        <ol id="normal-challenges" class="screen__list"></ol>
+        <p id="normal-rules" class="screen__lede"></p>
+        <p id="normal-inventory" class="screen__lede"></p>
+        <p class="screen__lede">Cada uso cuenta. Revisa el terreno; durante la partida puedes pausar para elegir tu siguiente acción.</p>
+        <div class="menu-actions">
+          <button id="begin-normal" class="button button--primary" type="button">› COMENZAR</button>
+          <button id="reroll-normal" class="button button--quiet" type="button">↻ OTRA RUTA</button>
+          <button id="close-briefing" class="button button--quiet" type="button">‹ MENÚ PRINCIPAL</button>
+        </div>
       </div>
     </section>
 
@@ -93,10 +142,10 @@
         <ol class="screen__list">
           <li>Los lemmings salen de la <b>ENTRADA</b> y caminan solos. Giran al chocar con una pared.</li>
           <li>Elige una habilidad en la barra inferior y toca o haz clic en un lemming para asignársela. Cada etapa trae sus habilidades y un número limitado de usos.</li>
-          <li>Tocar con la misma habilidad a quien <b>cava, perfora, mina o construye</b> lo detiene y devuelve el uso. Un bloqueador solo se libera haciéndolo detonar.</li>
-          <li><b>Paracaídas</b> y <b>Escalar</b> son permanentes. <b>Detonar</b> explota a los 4 s. Quien bloquea o construye hace dar la vuelta a los demás. El acero gris no se rompe y el agua ahoga.</li>
+          <li>Tocar con la misma habilidad a quien <b>cava, perfora, mina o construye</b> lo detiene. Solo en Fácil y tutorial devuelve el uso. Un bloqueador solo se libera haciéndolo detonar.</li>
+          <li><b>Paracaídas</b> y <b>Escalar</b> son permanentes en Fácil y tutorial. En Normal y Difícil sirven para una escalada o una caída y deben volver a asignarse. <b>Detonar</b> explota a los 4 s. Quien bloquea o construye hace dar la vuelta a los demás. El acero gris no se rompe y el agua ahoga.</li>
           <li>Abre camino hasta la <b>SALIDA</b> y rescata al menos el objetivo antes de que se acabe el tiempo.</li>
-          <li>Las etapas se juegan en orden: supera una para abrir la siguiente.</li>
+          <li>JUGAR permite elegir Fácil (3 problemas), Normal (3–5) o Difícil (7–8 y tres pisos). JUGAR TUTORIAL abre las diez lecciones en orden: supera una para abrir la siguiente.</li>
         </ol>
         <div class="screen__controls">
           <p class="controls--keyboard"><kbd>1</kbd>–<kbd>8</kbd> habilidad · <kbd>←</kbd><kbd>→</kbd> elegir · <kbd>ENTER</kbd> asignar o detener · <kbd>D</kbd> cavar</p>
@@ -127,6 +176,7 @@
       <p id="result-copy" class="screen__lede"></p>
       <div class="menu-actions">
         <button id="next-stage" class="button button--primary" type="button" hidden><span class="button__signal">›</span><span id="next-stage-label">SIGUIENTE ETAPA</span></button>
+        <button id="another-normal" class="button button--primary" type="button" hidden>› NUEVA EXPEDICIÓN</button>
         <button id="play-again" class="button button--quiet" type="button"><span class="button__signal">↻</span>VOLVER A JUGAR</button>
         <button id="menu-from-result" class="button button--quiet" type="button"><span class="button__signal">⌂</span>MENÚ PRINCIPAL</button>
       </div>

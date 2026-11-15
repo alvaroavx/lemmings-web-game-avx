@@ -6,6 +6,7 @@ import { Music } from './platform/music.js';
 import { FrameLoop } from './platform/loop.js';
 import { Surface } from './platform/surface.js';
 import { loadSettings } from './platform/storage.js';
+import { StageGenerator } from './platform/generator.js';
 import { GameApp } from './app/game-app.js';
 
 const canvas = document.getElementById('world');
@@ -18,7 +19,7 @@ let app = null;
 const loop = new FrameLoop(elapsed => app.frame(elapsed));
 app = new GameApp({
   levels: LEVELS, canvas, surface, renderer, loop,
-  audio, music, settings,
+  audio, music, settings, generator: new StageGenerator(),
   reducedMotion: matchMedia('(prefers-reduced-motion: reduce)'),
 });
 surface.fit();

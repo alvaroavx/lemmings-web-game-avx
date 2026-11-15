@@ -1,3 +1,4 @@
+import { DIFFICULTIES } from '../game/difficulty.js';
 import { Clock } from '../engine/clock.js';
 import { World } from '../game/world.js';
 import { SKILLS, SKILL_ORDER, SKILL_OF_STATE } from '../game/skills.js';
@@ -19,15 +20,16 @@ const pad = n => String(n).padStart(2, '0');
  *   menu → playing ⇄ paused (pause | restart screens), playing → result → menu | playing
  * and translates input into World commands. It never draws sprites nor
  * resolves collisions; World and Renderer stay independent of each other.
- * Stages come from `levels`; the main menu lists every one of them.
+ * Authored levels live in the tutorial; generated levels are independent expeditions.
  */
 export class GameApp {
-  constructor({ levels, canvas, surface, renderer, audio, music, loop, settings, reducedMotion }) {
-    Object.assign(this, { levels, canvas, surface, renderer, audio, music, loop, settings, reducedMotion });
-    this.settingsReturn = 'start-screen';
+  constructor({ levels, canvas, surface, renderer, audio, music, loop, settings, reducedMotion, generator }) {
+    Object.assign(this, { levels, canvas, surface, renderer, audio, music, loop, settings, reducedMotion, generator });
+    this.difficulty = 'easy';
+    this.settingsReturn = 'start-screen'; this.generationRequest = 0; this.preparedLevel = null;
     this.level = levels[0];
     this.clock = new Clock(); this.hud = new Hud();
-    this.screens = new Screens(['start-screen', 'pause-screen', 'restart-screen', 'help-screen', 'settings-screen', 'result-screen'],
+    this.screens = new Screens(['start-screen', 'tutorial-screen', 'difficulty-screen', 'generation-screen', 'briefing-screen', 'pause-screen', 'restart-screen', 'help-screen', 'settings-screen', 'result-screen'],
       ['hud', 'stage-frame', 'toolbar']);
     this.state = 'menu'; this.speed = 1; this.selectedId = null; this.skill = 'dig'; this.dirty = true;
     this.world = new World(this.level); this.tap = null;
@@ -48,9 +50,9 @@ export class GameApp {
   useLevel(level) {
     this.level = level; this.world = new World(level);
     this.renderer.setLevel(level); this.surface.fit();
-    setText($('stage-number'), `ETAPA ${pad(level.number)}`);
+    setText($('stage-number'), level.mode === 'random' ? DIFFICULTIES[level.difficulty].label.toUpperCase() : `TUTORIAL ${pad(level.number)}`);
     setText($('stage-label'), level.name.toUpperCase());
-    $('stage-frame').setAttribute('aria-label', `Etapa ${level.number}: ${level.name}`);
+    $('stage-frame').setAttribute('aria-label', level.mode === 'random' ? level.name : `Etapa ${level.number}: ${level.name}`);
     this.hud.setLevel(level); this.buildToolbar(level); this.hud.tick(this.world, 0, true);
   }
   /** One button per skill in the stage inventory, in canonical order; keys 1–8. */
@@ -76,7 +78,8 @@ export class GameApp {
     this.skill = id;
     for (const other of this.skillIds) $(`skill-${other}`).setAttribute('aria-pressed', String(other === id));
     if (quiet || this.state !== 'playing') return;
-    this.hint(SKILL_UI[id].select); this.announce(`${SKILLS[id].label} seleccionado.`);
+    this.hint(this.level.singleUseSkills && id === 'climb' ? 'Escalar: sirve para un muro. Después tendrás que asignarlo otra vez.'
+      : this.level.singleUseSkills && id === 'float' ? 'Paracaídas: sirve para una caída. Se consume al aterrizar después de abrirse.' : SKILL_UI[id].select); this.announce(`${SKILLS[id].label} seleccionado.`);
     this.canvas.focus({ preventScroll: true });
   }
   start(level = this.level) {
@@ -88,18 +91,19 @@ export class GameApp {
     const hatch = level.hatches?.[0] ?? level.spawn; // multi-hatch stages list them in `hatches`
     this.surface.centerOn(hatch.x + 40, false);
     this.hint(`${level.brief ?? ''} ${SKILLS[this.skill].label} está seleccionado.${this.surface.scrolling ? ' Desliza para mover la vista.' : ''}`.trim());
-    this.announce(`Etapa ${level.number}, ${level.name}. Rescata al menos ${level.required}. Elige habilidad con los números, lemming con las flechas y asigna con Enter.`);
+    this.announce(`${level.mode === 'random' ? level.name : `Etapa ${level.number}, ${level.name}` }. Rescata al menos ${level.required}. Elige habilidad con los números, lemming con las flechas y asigna con Enter.`);
     this.canvas.focus({ preventScroll: true });
   }
   menu() {
+    this.generationRequest++; this.generator.cancel(); this.preparedLevel = null;
     this.audio.stop(); this.music.stop(); this.useLevel(this.level); this.selectedId = null;
     this.setMode('menu'); this.refreshStageList();
-    this.screens.show('start-screen', `stage-${this.frontier().id}`);
+    this.screens.show('start-screen', 'play-normal');
   }
   pause() {
     if (this.state !== 'playing') return;
     this.setMode('paused'); this.audio.stop(); this.music.pause();
-    setText($('pause-kicker'), `ETAPA ${pad(this.level.number)} // EN PAUSA`);
+    setText($('pause-kicker'), this.level.mode === 'random' ? `${this.level.name.toUpperCase()} // EN PAUSA` : `TUTORIAL ${pad(this.level.number)} // EN PAUSA`);
     this.screens.show('pause-screen', 'resume');
   }
   resume() { this.screens.hide(); this.setMode('playing'); this.music.resume(this.track()); this.canvas.focus({ preventScroll: true }); }
@@ -123,7 +127,7 @@ export class GameApp {
   confirmRestart() {
     if (this.state !== 'playing' && this.state !== 'paused') return;
     if (this.state === 'playing') { this.setMode('paused'); this.audio.stop(); this.music.pause(); }
-    setText($('restart-copy'), `La etapa ${this.level.number} empezará de nuevo con los ${this.level.total} lemmings y todas las habilidades.`);
+    setText($('restart-copy'), `La misma ruta empezará de nuevo con los ${this.level.total} lemmings y todas las habilidades.`);
     this.screens.show('restart-screen', 'confirm-restart');
   }
   showHelp() { if (this.state === 'menu') this.screens.show('help-screen', 'close-help'); }
@@ -131,7 +135,7 @@ export class GameApp {
   finish() {
     const w = this.world, l = this.level, won = w.result === 'won';
     this.setMode('result'); this.audio.stop(); this.music.stop(); this.audio.play(won ? 'victory' : 'defeat');
-    if (recordBest(this.settings, l, w.saved)) saveSettings(this.settings);
+    if (l.mode !== 'random' && recordBest(this.settings, l, w.saved)) saveSettings(this.settings);
     setText($('result-title'), won ? (w.saved === l.total ? 'TODOS EN CASA' : 'MISIÓN CUMPLIDA') : 'INTÉNTALO OTRA VEZ');
     setText($('result-saved'), w.saved); setText($('result-total'), ` / ${l.total}`);
     setText($('result-percent'), `LEMMINGS A SALVO · ${Math.round(w.saved / l.total * 100)}%`);
@@ -139,12 +143,42 @@ export class GameApp {
       : `${l.hint ?? ''} Basta con rescatar ${l.required} para superar la etapa.`.trim());
     const next = won && this.nextLevel() && this.unlocked(this.nextLevel()) ? this.nextLevel() : null;
     $('next-stage').hidden = !next;
+    $('another-normal').hidden = l.mode !== 'random';
     if (next) setText($('next-stage-label'), `ETAPA ${pad(next.number)} · ${next.name.toUpperCase()}`);
-    $('play-again').classList.toggle('button--primary', !next); $('play-again').classList.toggle('button--quiet', !!next);
-    this.screens.show('result-screen', next ? 'next-stage' : 'play-again');
+    const primaryReplay = !next && l.mode !== 'random';
+    $('play-again').classList.toggle('button--primary', primaryReplay); $('play-again').classList.toggle('button--quiet', !primaryReplay);
+    this.screens.show('result-screen', l.mode === 'random' ? 'another-normal' : next ? 'next-stage' : 'play-again');
     this.announce(`${won ? 'Etapa superada' : 'Etapa no superada'}. ${w.saved} de ${l.total} lemmings a salvo.`);
   }
-  nextLevel() { return this.levels[this.levels.indexOf(this.level) + 1] ?? null; }
+  nextLevel() { const i = this.levels.indexOf(this.level); return i < 0 ? null : this.levels[i + 1] ?? null; }
+
+  tutorial() {
+    this.refreshStageList();
+    this.screens.show('tutorial-screen', `stage-${this.frontier().id}`);
+  }
+  async prepareExpedition() {
+    const request = ++this.generationRequest;
+    this.preparedLevel = null; this.audio.stop(); this.music.stop(); this.setMode('menu');
+    setText($('generation-status'), 'Buscando un camino para la colonia…');
+    $('retry-generation').hidden = true;
+    this.screens.show('generation-screen', 'cancel-generation');
+    try {
+      const level = await this.generator.generate(this.difficulty);
+      if (request !== this.generationRequest) return;
+      this.preparedLevel = level; this.useLevel(level);
+      setText($('briefing-mode'), `EXPEDICIÓN ALEATORIA // ${DIFFICULTIES[level.difficulty].label.toUpperCase()}`);
+      setText($('normal-rules'), DIFFICULTIES[level.difficulty].rules);
+      setText($('normal-goal'), `${level.total} lemmings · rescata ${level.required} · ${level.seconds / 60} minutos`);
+      $('normal-challenges').replaceChildren(...level.challenges.map(name => el('li', {}, name)));
+      setText($('normal-inventory'), SKILL_ORDER.filter(id => level.skills[id]).map(id => `${SKILLS[id].label}: ${level.skills[id]}`).join(' · '));
+      this.screens.show('briefing-screen', 'begin-normal'); this.dirty = true;
+      this.announce(`Ruta ${DIFFICULTIES[level.difficulty].label.toLowerCase()} preparada. ${level.challenges.length} obstáculos. Revisa tus habilidades antes de comenzar.`);
+    } catch (error) {
+      if (request !== this.generationRequest || error.name === 'AbortError') return;
+      setText($('generation-status'), 'No se pudo preparar una ruta. Vuelve a intentarlo.');
+      $('retry-generation').hidden = false; $('retry-generation').focus();
+    }
+  }
 
   // ── Main menu ──────────────────────────────────────────────────────────────
   buildStageList() {
@@ -192,7 +226,7 @@ export class GameApp {
     // Touching a lemming busy with the selected skill stops it and refunds the use.
     const busy = SKILL_OF_STATE[this.world.lemmings.find(l => l.id === id)?.state];
     if (busy?.id === skill && this.world.cancel(id)) {
-      this.hint(`Lemming ${id} deja de ${label.toLowerCase()} y sigue caminando. Recuperas el uso.`);
+      this.hint(`Lemming ${id} deja de ${label.toLowerCase()} y sigue caminando. ${this.level.singleUseSkills ? 'El uso no se devuelve.' : 'Recuperas el uso.'}`);
       this.announce(`Lemming ${id} se detiene. Usos de ${label}: ${this.world.inventory[skill]}.`);
       this.hud.tick(this.world, 0, true); this.dirty = true;
       return;
@@ -285,7 +319,7 @@ export class GameApp {
         if (this.screens.is('pause-screen') || this.screens.is('restart-screen')) this.resume();
         else if (this.screens.is('help-screen')) this.closeHelp();
         else if (this.screens.is('settings-screen')) this.closeSettings();
-        else if (this.screens.is('result-screen')) this.menu();
+        else if (['result-screen', 'tutorial-screen', 'difficulty-screen', 'generation-screen', 'briefing-screen'].some(id => this.screens.is(id))) this.menu();
         return;
       }
       if (this.state !== 'playing') return;
@@ -298,6 +332,17 @@ export class GameApp {
       else if (code === 'Equal' || code === 'NumpadAdd') { event.preventDefault(); this.changeRate(5); }
     });
     document.addEventListener('visibilitychange', () => { if (document.hidden) this.pause(); else this.loop.resetTime(); });
+    on('play-normal', () => this.screens.show('difficulty-screen', `choose-${this.difficulty}`));
+    for (const difficulty of Object.keys(DIFFICULTIES)) on(`choose-${difficulty}`, () => { this.difficulty = difficulty; this.prepareExpedition(); });
+    on('close-difficulty', () => this.menu());
+    on('play-tutorial', () => this.tutorial());
+    on('close-tutorial', () => this.menu());
+    on('cancel-generation', () => this.menu());
+    on('retry-generation', () => this.prepareExpedition());
+    on('reroll-normal', () => this.prepareExpedition());
+    on('close-briefing', () => this.menu());
+    on('begin-normal', () => { if (this.preparedLevel) this.start(this.preparedLevel); });
+    on('another-normal', () => this.prepareExpedition());
     on('pause', () => this.pause());
     on('resume', () => this.resume());
     on('restart', () => this.confirmRestart());

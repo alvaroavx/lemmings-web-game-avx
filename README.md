@@ -1,6 +1,6 @@
 # Lemmings AVX
 
-Un laboratorio jugable de rescate dentro del universo **Vector Field**. Incluye menú principal y una primera etapa, **Solo cava**, inspirada en la idea de «Just dig!» de Lemmings (1991). Los personajes, el escenario, el código y los sonidos se construyeron para este proyecto; no se ejecuta ni se distribuye el binario original.
+Un laboratorio jugable de rescate dentro del universo **Vector Field**. Incluye expediciones aleatorias de tres dificultades y un tutorial de diez etapas; la primera, **Solo cava**, está inspirada en «Just dig!» de Lemmings (1991). Los personajes, el escenario, el código y los sonidos se construyeron para este proyecto; no se ejecuta ni se distribuye el binario original.
 
 ## Jugar
 
@@ -10,21 +10,37 @@ python3 server.py
 
 Abrir **http://127.0.0.1:8081** (otro puerto: `python3 server.py --port 8082`). Python 3 sirve `src/`; no hay instalaciones npm ni dependencias de ejecución. También se puede publicar el contenido de `src/` en cualquier alojamiento estático, incluso bajo un subdirectorio. Abrir `index.html` mediante `file://` no es compatible con los módulos ES.
 
-Hay **diez etapas**. Cada una enseña algo nuevo: cavar, paracaídas, bloquear, minar y escalar, perforar, detonar, construir, acero, dos compuertas y un examen final con agua en un mapa ancho. En la barra inferior aparecen solo las habilidades de la etapa, con sus usos restantes.
+El menú ofrece **Jugar** (expedición aleatoria) y **Jugar tutorial**. El tutorial conserva **diez etapas**. Cada una enseña algo nuevo: cavar, paracaídas, bloquear, minar y escalar, perforar, detonar, construir, acero, dos compuertas y un examen final con agua en un mapa ancho. En la barra inferior aparecen solo las habilidades de la etapa, con sus usos restantes.
 
-1. En el menú principal, a pantalla completa, elegir la etapa **01 · Solo cava**. Cada etapa muestra su objetivo y tu mejor rescate.
+1. En el menú principal, entrar en **Jugar tutorial** y elegir la etapa **01 · Solo cava**. Cada etapa muestra su objetivo y tu mejor rescate.
 2. Esperar a que el primer lemming caiga sobre la plataforma superior.
 3. **Cavar** ya está seleccionado: pulsar sobre ese lemming para abrir un túnel vertical. Cavar es lento: los que llegan caen al hoyo y, si también se les asigna Cavar, se suman a la cuadrilla y el hoyo baja más rápido (cuatro excavadores ≈ cuatro veces uno).
 4. Cuando el túnel atraviesa la plataforma, la colonia cae sobre la isla inferior y camina hacia la salida. La plataforma superior tiene paredes en ambos extremos: sin túnel nadie se cae, pero caminan de pared a pared hasta que se acaba el tiempo.
 
 Salen diez lemmings. Hay diez asignaciones de excavador y cinco minutos. Basta con rescatar **uno de diez**, como objetivo de iniciación; el desafío completo es salvar a los diez. La etapa 7 pide rescatar 7 de 10. Al cumplir el objetivo se espera a quienes aún pueden llegar a la puerta; si los restantes están atrapados y no hay trabajos cancelables en curso, se muestra la victoria sin esperar al reloj. Si la etapa ya no se puede superar (no quedan lemmings suficientes, o no quedan habilidades y la colonia no llegará), aparece «SIN SALIDA» con una cuenta de 5 segundos y la etapa termina.
 
+### Expediciones aleatorias
+
+**Jugar** permite elegir dificultad. Cada partida tiene diez lemmings y un inventario calculado a partir de una solución comprobada.
+
+| Dificultad | Problemas | Objetivo | Reglas |
+| --- | --- | --- | --- |
+| Fácil | 3 | 7 de 10 · 5 min | Escalar y paracaídas permanentes; soluciones alternativas; detener trabajos devuelve su uso. |
+| Normal | 3–5 | 8 de 10 · 6 min | Una escalada o caída por asignación; detener trabajos no devuelve usos. |
+| Difícil | 7–8, en tres pisos | 9 de 10 · 9 min | Habilidades consumibles, dos puentes, descensos, muros y solo una pérdida permitida. |
+
+En Normal y Difícil, **Escalar** se consume al iniciar una escalada, incluso si encuentra un techo. **Paracaídas** se consume al aterrizar tras una caída en la que se despliega; los escalones pequeños no lo gastan. Para otro muro o caída debes asignar de nuevo la habilidad y gastar otro uso. Una asignación de constructor o excavador sigue realizando su trabajo completo: un uso no significa un solo ladrillo o golpe de pala.
+
+Antes de **Comenzar** se muestra el mapa, los problemas y los usos. **Otra ruta** genera un escenario nuevo en la dificultad elegida. **Reiniciar** y **Volver a jugar** repiten el mismo. El tutorial conserva sus reglas permanentes y su progreso.
+
+Cada ruta tiene una solución ejecutada con el motor real. En Normal y Difícil también se comprueba que omitir la solución de cada obstáculo impide ganar con el resto de ese plan. Se prueban posiciones desplazadas ±8 unidades en Fácil, ±6 en Normal y ±3 en Difícil. Es una comprobación de margen, no una garantía de solución única ni de dificultad humana uniforme.
+
 ### Controles
 
 | Acción | Control |
 | --- | --- |
 | Asignar la habilidad elegida | Clic o toque sobre un lemming (Cavar en un hoyo se suma a la cuadrilla) |
-| Detener a quien cava, perfora, mina o construye | Clic o toque sobre él con esa misma habilidad elegida (o `Enter`): sigue caminando y el uso vuelve |
+| Detener a quien cava, perfora, mina o construye | Clic o toque sobre él con esa misma habilidad elegida (o `Enter`): sigue caminando y el uso vuelve en Fácil/tutorial |
 | Mover la vista (pantallas estrechas) | Deslizar el dedo, rueda del ratón o indicadores ◀ ▶ de los bordes |
 | Elegir habilidad | Botones de la barra, teclas `1`–`8` en su orden, `D` para Cavar |
 | Elegir lemming con terreno enfocado | `←` / `→` |
@@ -55,6 +71,6 @@ Las pruebas usan `node:test` sin dependencias: reglas, repetición exacta desde 
 
 ## Alcance
 
-Diez etapas y ocho habilidades (Escalar, Paracaídas, Detonar, Bloquear, Construir, Perforar, Minar, Cavar), con tierra, acero y agua. Las etapas son rutas de piezas con cerraduras y llaves, y cada una trae una prueba ejecutable: gana, se repite idéntica y cada habilidad que enseña es necesaria ([cómo se construyen las etapas](docs/stages.md)). El mismo vocabulario y la misma verificación son la base del futuro generador de etapas aleatorias, que todavía no existe. El menú principal lista todas las etapas de `LEVELS` en orden lineal, como en 1991: cada etapa se abre al superar la anterior. Al superar una, el resultado ofrece la siguiente. Sin cuentas, telemetría ni backend de partidas. Los mapas son diseños propios que siguen la progresión didáctica del clásico, no reproducciones de sus niveles.
+Diez etapas y ocho habilidades (Escalar, Paracaídas, Detonar, Bloquear, Construir, Perforar, Minar, Cavar), con tierra, acero y agua. Las etapas son rutas de piezas con cerraduras y llaves, y cada una trae una prueba ejecutable: gana, se repite idéntica y cada habilidad que enseña es necesaria ([cómo se construyen las etapas](docs/stages.md)). El generador aleatorio reutiliza ese vocabulario y verifica cada ruta antes de ofrecerla. El menú del tutorial lista todas las etapas de `LEVELS` en orden lineal, como en 1991: cada etapa se abre al superar la anterior. Al superar una, el resultado ofrece la siguiente. Sin cuentas, telemetría ni backend de partidas. Los mapas son diseños propios que siguen la progresión didáctica del clásico, no reproducciones de sus niveles.
 
 La música, «Marcha de la colonia», es una composición original de este proyecto, sintetizada en el navegador (`src/js/platform/music.js`): no hay archivos de audio. Cada etapa toca su propia variación del tema (otra tonalidad, modo, tempo, timbre, batería o bajo). Las fuentes Noto Sans Mono se reutilizan desde Vector Field con su [licencia OFL](src/assets/fonts/LICENSE-OFL-1.1.txt). Lemmings es el referente del laboratorio; este proyecto no afirma afiliación oficial.
